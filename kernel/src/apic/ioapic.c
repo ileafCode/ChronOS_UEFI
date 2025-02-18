@@ -71,7 +71,7 @@ void ioapic_init() {
         entry += vlr->rec_length;
     }
 
-    ioapic_address = (uint32_t*)ioapic_entry->ioapic_addr;
+    ioapic_address = (uint32_t*)((uint64_t)ioapic_entry->ioapic_addr);
     paging_map(
         (void *)((uint64_t)ioapic_address & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)ioapic_address & 0xFFFFFFFFFFFFF000),

@@ -46,6 +46,7 @@
 #define LAPIC_LVT_LINT0 0x350
 #define LAPIC_LVT_LINT1 0x360
 
+uint32_t get_lapic_addr();
 void lapic_init();
 
 #endif

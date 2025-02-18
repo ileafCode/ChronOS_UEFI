@@ -59,12 +59,8 @@ int isdigit(char c) {
     return 0;
 }
 
-void printk(const char *fmt, ...) {
-    va_list args;
-
-    va_start(args, fmt);
-
-	uint8_t is_format = 0;
+void vprintk(const char *fmt, va_list args) {
+    uint8_t is_format = 0;
 	uint16_t flags = 0;
 
     for (; *fmt; fmt++) {
@@ -131,6 +127,11 @@ void printk(const char *fmt, ...) {
 		}
         }
     }
+}
 
+void printk(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vprintk(fmt, args);
     va_end(args);
 }

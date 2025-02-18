@@ -26,7 +26,7 @@ uint32_t palette[] = {
     0x3F3F3F, // dark gray - 8
     0xFF0000, // red - 9
     0x00FF00, // green - 10
-    0xFFFF00, // brown - 11
+    0xFFFF00, // yellow - 11
     0x0000FF, // blue - 12
     0xFF00FF, // magenta - 13 
     0x00FFFF, // cyan - 14

@@ -63,6 +63,11 @@ EXTERN lapic_address
 %endmacro
 
 ; IRQs
+EXTERN timer_handler
+timer_irq:
+    irq_stub timer_handler
+GLOBAL timer_irq
+
 EXTERN kbd_ps2_handler
 kbd_ps2_irq:
     irq_stub kbd_ps2_handler

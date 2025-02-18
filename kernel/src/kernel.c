@@ -11,6 +11,8 @@
 #include <acpi/acpi.h>
 #include <apic/lapic.h>
 #include <apic/ioapic.h>
+#include <pci/pci.h>
+#include <logging/logging.h>
 
 #include <timers/hpet/hpet.h>
 
@@ -46,9 +48,7 @@ void _start(boot_info_t *boot_info) {
     ioapic_init();
 
     hpet_init();
-
-    //ioapic_set_entry(ioapic_remap_irq(1), 0x21);
-
+    pci_init();
     enable_sce();
 
     terminal_set_fg_color_palette(10);
@@ -61,6 +61,8 @@ void _start(boot_info_t *boot_info) {
         printk("# ");
     }
     printk("\n");
+    terminal_set_fg_color_palette(15);
+    terminal_set_bg_color_palette(0);
 
     terminal_set_fg_color_palette(15);
     terminal_set_bg_color_palette(0);

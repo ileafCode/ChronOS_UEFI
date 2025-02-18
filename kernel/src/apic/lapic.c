@@ -13,6 +13,9 @@ void write_lapic_register(const uint32_t offset, const uint32_t val) {
 uint32_t read_lapic_register(const uint32_t offset) {
     return *((volatile uint32_t*)((uintptr_t)lapic_address + offset));
 }
+uint32_t get_lapic_addr() {
+    return (uint32_t)((uint64_t)lapic_address);
+}
 
 void lapic_init() {
     madt_t *madt = (madt_t *)acpi_find_table("APIC");

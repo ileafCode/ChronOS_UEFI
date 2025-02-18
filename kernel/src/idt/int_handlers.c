@@ -41,13 +41,18 @@ void kbd_ps2_handler() {
     //printk("%x\n", sc);
 }
 
+void timer_handler() {
+}
+
 extern void div0_int();
 extern void pf_int();
 
+extern void timer_irq();
 extern void kbd_ps2_irq();
 
 void int_handlers_init() {
     idt_set_gate(div0_int, 0, IDT_TA_InterruptGate, 0x08);
     idt_set_gate(pf_int, 14, IDT_TA_InterruptGate, 0x08);
+    idt_set_gate(timer_irq, 0x20, IDT_TA_InterruptGate, 0x08);
     idt_set_gate(kbd_ps2_irq, 0x21, IDT_TA_InterruptGate, 0x08);
 }
