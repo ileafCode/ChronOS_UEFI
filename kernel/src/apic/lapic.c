@@ -1,8 +1,7 @@
 #include <apic/lapic.h>
-#include <apic/lapic.h>
-#include <printk/printk.h>
 #include <mm/vmm/paging.h>
 #include <io/io.h>
+#include <logging/logging.h>
 
 volatile uint32_t *lapic_address = 0;
 
@@ -13,6 +12,11 @@ void write_lapic_register(const uint32_t offset, const uint32_t val) {
 uint32_t read_lapic_register(const uint32_t offset) {
     return *((volatile uint32_t*)((uintptr_t)lapic_address + offset));
 }
+
+int get_lapic_id() {
+    return 0;
+}
+
 uint32_t get_lapic_addr() {
     return (uint32_t)((uint64_t)lapic_address);
 }
@@ -20,7 +24,7 @@ uint32_t get_lapic_addr() {
 void lapic_init() {
     madt_t *madt = (madt_t *)acpi_find_table("APIC");
     if (!madt) {
-        printk("No LAPIC. Halting.\n");
+        log_error("LAPIC", "No LAPIC. Halting.");
         asm volatile ("cli;hlt");
     }
 
@@ -50,5 +54,5 @@ void lapic_init() {
     write_lapic_register(LAPIC_TPR, 0);
     write_lapic_register(LAPIC_EOI, 0);
 
-    printk("LAPIC initialized\n");
+    log_ok("LAPIC", "LAPIC initialized\n");
 }

@@ -1,5 +1,5 @@
 #include <gdt/gdt.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
 
 __attribute__((aligned(0x1000)))
 gdt_t default_gdt = {
@@ -32,5 +32,5 @@ void gdt_init() {
     gdt_desc.size = sizeof(gdt_t) - 1;
     gdt_desc.offset = (uint64_t)&default_gdt;
     load_gdt(&gdt_desc);
-    printk("GDT and TSS initialized\n");
+    log_ok("GDT", "GDT and TSS initialized\n");
 }

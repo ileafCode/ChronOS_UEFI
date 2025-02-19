@@ -33,11 +33,7 @@ void _start(boot_info_t *boot_info) {
     paging_init(boot_info);
 
     if (boot_info->rsdp == 0) { // Fatal error
-        terminal_set_fg_color_palette(9);
-        printk("FATAL ERROR");
-        terminal_set_fg_color_palette(15);
-        printk(": no RSDP/XSDP found!\n");
-
+        log_error("RSDP", "No RSDP/XSDP found.");
         printk("This OS does NOT support computers without ACPI.\n");
         asm volatile ("cli;hlt");
     }
@@ -64,8 +60,7 @@ void _start(boot_info_t *boot_info) {
     terminal_set_fg_color_palette(15);
     terminal_set_bg_color_palette(0);
 
-    terminal_set_fg_color_palette(15);
-    terminal_set_bg_color_palette(0);
+    ioapic_set_entry(ioapic_remap_irq(1), 0x21);
 
     while (1);
 }

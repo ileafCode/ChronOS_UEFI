@@ -1,6 +1,11 @@
 #include <mm/pmm/pmm.h>
 #include <terminal/terminal.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
+
+typedef struct mem_block {
+    void *address;
+    uint64_t size;
+} mem_block_t;
 
 // 0 - FREE
 // 1 - USED
@@ -8,6 +13,9 @@ uint8_t *bitmap = (uint8_t*)0x20000;
 uint64_t bitmap_size = 0;
 
 void *start_of_mem = NULL;
+
+mem_block_t *mem_blocks = (mem_block_t*)0x1F000;
+int num_mem_blocks = 0;
 
 uint8_t bitmap_get(uint32_t idx) {
     if (idx > bitmap_size * 8)
@@ -54,20 +62,29 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
     for (int i = 0; i < mMapEntries; i++) {
         EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)((uint64_t)mmap + (i * mmap_descsize));
         if (desc->type == 7) { // type = EfiConventionalMemory
-            if (desc->numPages * 4096 > largestFreeMemSegSize) {
-                largestFreeMemSeg = desc->physAddr;
-                largestFreeMemSegSize = desc->numPages * 4096;
-            }
+            mem_block_t blk = { 
+                (void *)desc->physAddr,
+                desc->numPages * 4096
+            };
+            mem_blocks[num_mem_blocks++] = blk;
+        }
+    }
+
+    for (int i = 0; i < num_mem_blocks; i++) {
+        if (mem_blocks[i].size * 4096 > largestFreeMemSegSize) {
+            largestFreeMemSeg = mem_blocks[i].address;
+            largestFreeMemSegSize = mem_blocks[i].size * 4096;
         }
     }
 
     start_of_mem = largestFreeMemSeg;
-    printk("Located largest free memory segment\n");
+    log_info("PMM", "Located largest free memory segment");
 
     uint64_t memory_size = get_mem_size(mmap, mMapEntries, mmap_descsize);
     bitmap_size = ((memory_size / 4096) / 8) + 1;
+    log_info("PMM", "Got memory and bitmap size");
 
-    printk("PMM initialized\n");
+    log_ok("PMM", "PMM initialized\n");
 }
 
 void *pmm_getpage() {

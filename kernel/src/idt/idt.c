@@ -1,7 +1,7 @@
 #include <idt/idt.h>
 #include <idt/int_handlers.h>
 #include <terminal/terminal.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
 #include <debug/stacktrace/stacktrace.h>
 
 idtr_t idtr;
@@ -37,5 +37,5 @@ void idt_init() {
     asm("lidt %0" : : "m"(idtr));
     asm volatile ("sti");
 
-    printk("IDT initialized\n");
+    log_ok("IDT", "IDT initialized\n");
 }

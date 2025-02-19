@@ -1,7 +1,7 @@
 
 #include <acpi/acpi.h>
 #include <mm/vmm/paging.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
 #include <string/string.h>
 
 rsdp_t *rsdp;
@@ -25,19 +25,20 @@ sdt_hdr_t *acpi_find_table(const char *signature) {
 
 void acpi_init(boot_info_t *boot_info) {
     rsdp = (rsdp_t *)boot_info->rsdp;
-    printk("RSDP info:\n");
-    printk("    RSDP addr: %x\n", rsdp);
+    printk(" --- RSDP info ---\n");
+    printk("    RSDP addr: %lx\n", rsdp);
     printk("    RSDP OEMID: %s\n", rsdp->oemid);
     printk("    RSDP revision: %d\n", rsdp->revision);
-    printk("    RSDT addr: %x\n", rsdp->rsdt_addr);
+    printk("    RSDT addr: %lx\n", rsdp->rsdt_addr);
 
     rsdt = (rsdt_t *)((uint64_t)rsdp->rsdt_addr);
     if (!rsdt) {
-        printk("No rsdt!\n");
+        log_error("ACPI", "No RSDP found. Halting");
         asm volatile ("cli;hlt");
     }
 
     paging_map((void *)(rsdt), (void *)(rsdt), NULL);
+    log_info("ACPI", "Mapped RSDT to memory");
 
     int entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
     for (int i = 0; i < entries; i++) {
@@ -48,5 +49,7 @@ void acpi_init(boot_info_t *boot_info) {
             NULL
         );
     }
-    printk("ACPI initialized\n");
+    log_info("ACPI", "Mapped every table to memory");
+
+    log_ok("ACPI", "ACPI initialized\n");
 }

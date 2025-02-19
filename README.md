@@ -27,6 +27,7 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [ ] PIC...?
 
 ### Drivers
+- [x] QEMU EDU
 - [ ] IDE
 - [ ] UHCI
 - [ ] AC97 (maybe)

@@ -47,12 +47,31 @@ void terminal_clear() {
     memset32((void *)(framebuffer->address), bg_color, framebuffer->width * framebuffer->height);
 }
 
+void terminal_scroll() {
+    int row_size = framebuffer->width * char_height; // Width * character height in pixels
+    uint32_t *fb = (uint32_t *)framebuffer->address;
+
+    // Move each row up by `char_height` pixels
+    for (int y = 0; y < framebuffer->height - char_height; y++) {
+        for (int x = 0; x < framebuffer->width; x++) {
+            fb[x + y * framebuffer->width] = fb[x + (y + char_height) * framebuffer->width];
+        }
+    }
+
+    // Clear the last row by setting it to the background color
+    memset32(fb + (framebuffer->width * (framebuffer->height - char_height)), 
+             bg_color, framebuffer->width * char_height);
+
+    // Move the cursor to the last row
+    cursor_y -= char_height;
+}
+
 void terminal_putc(char chr) {
     if (chr == '\n') {
         cursor_x = 0;
         cursor_y += char_height;
         if (cursor_y + char_height > framebuffer->height)
-            terminal_clear();
+            terminal_scroll();
         return;
     }
 
@@ -75,7 +94,7 @@ void terminal_putc(char chr) {
         cursor_y += char_height;
     }
     if (cursor_y + char_height > framebuffer->height)
-        terminal_clear();
+        terminal_scroll();
 }
 
 void terminal_puts(char *string) {

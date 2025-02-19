@@ -38,7 +38,7 @@ void pf_handler() {
 
 void kbd_ps2_handler() {
     uint8_t sc = inb(0x60);
-    //printk("%x\n", sc);
+    printk("%x\n", sc);
 }
 
 void timer_handler() {

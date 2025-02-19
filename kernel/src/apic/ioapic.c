@@ -1,6 +1,6 @@
 #include <apic/ioapic.h>
 #include <mm/vmm/paging.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
 
 madt_t *madt;
 volatile uint32_t* ioapic_address;
@@ -31,7 +31,7 @@ int ioapic_remap_irq(int irq) {
 
         if (header->entry_type == 2) {  // Type 2 = Interrupt Source Override
             apic_int_override_t *s = (apic_int_override_t *)p;
-            //printk("Int: %d; Src: %d\n", s->interrupt, s->source);
+            //log_info("IOAPIC", "(ioapic_remap_irq) Int: %d; Src: %d", s->interrupt, s->source);
             if (s->source == irq)
                 return s->interrupt;
         }
@@ -50,7 +50,7 @@ void ioapic_set_entry(uint8_t index, uint64_t data) {
 void ioapic_init() {
     madt = (madt_t *)acpi_find_table("APIC");
     if (!madt) {
-        printk("No IOAPIC. Halting.\n");
+        log_error("IOAPIC", "No IOAPIC. Halting.");
         asm volatile ("cli;hlt");
     }
 
@@ -63,8 +63,8 @@ void ioapic_init() {
         madt_vlr_t *vlr = (madt_vlr_t *)entry;
         switch (vlr->entry_type) {
             case 1: // IO APIC
-                printk("IO APIC found\n");
                 ioapic_entry = (ioapic_entry_t *)vlr;
+                log_info("IOAPIC", "IOAPIC address found: %lx", (uint64_t)ioapic_entry->ioapic_addr);
                 break;
         }
 
@@ -84,5 +84,5 @@ void ioapic_init() {
     for (uint32_t i = 0; i < max_entries; ++i)
         ioapic_set_entry(i, IOAPIC_ENTRY_MASK);
     
-    printk("IOAPIC initialized\n");
+    log_ok("IOAPIC", "IOAPIC initialized\n");
 }

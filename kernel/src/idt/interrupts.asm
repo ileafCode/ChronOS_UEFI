@@ -73,6 +73,11 @@ kbd_ps2_irq:
     irq_stub kbd_ps2_handler
 GLOBAL kbd_ps2_irq
 
+EXTERN edu_irq_handler
+edu_irq:
+    irq_stub edu_irq_handler
+GLOBAL edu_irq
+
 ; Exceptions
 EXTERN div0_handler
 div0_int:

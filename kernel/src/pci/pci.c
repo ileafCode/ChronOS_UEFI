@@ -1,7 +1,10 @@
 #include <pci/pci.h>
 #include <mm/vmm/paging.h>
 #include <apic/lapic.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
+
+// All drivers
+#include <drivers/edu_qemu/edu.h>
 
 uint32_t pci_find_capability(pci_hdr0_t *pciDeviceHeader, uint8_t capID) {
     uint8_t ptr = pciDeviceHeader->capabilities_ptr;
@@ -26,20 +29,26 @@ void pci_enable_msi(pci_dev_hdr_t *pciDeviceHeader, uint8_t vector) {
         printk("MSI capability not found for device @ %p\n", pciDeviceHeader);
         return;
     }
-
-    // Read MSI Control Register
+    
     volatile uint16_t *msiControl = (uint16_t *)((uint64_t)(msiCapAddr + 2));
-    volatile uint16_t msiEnableBit = 1 << 0;
+    uint16_t msiControlValue = *msiControl;
 
-    // Enable MSI
-    *msiControl |= msiEnableBit;
+    int is64Bit = (msiControlValue & (1 << 7)) ? 1 : 0;
 
-    // Set MSI Message Address and Data (Example configuration)
-    volatile uint32_t *msiAddr = (uint32_t *)((uint64_t)(msiCapAddr + 4));
-    volatile uint16_t *msiData = (uint16_t *)((uint64_t)(msiCapAddr + 8));
+    *msiControl |= 1;
 
-    *msiAddr = get_lapic_addr();
+    volatile uint32_t *msiAddr = (uint32_t *)(msiCapAddr + 4);
+    volatile uint16_t *msiData = (uint16_t *)(msiCapAddr + 8);
+
+    *msiAddr = get_lapic_addr() | (get_lapic_id() << 12);
     *msiData = vector;
+
+    if (is64Bit) {
+        volatile uint32_t *msiAddrHi = (uint32_t *)(msiCapAddr + 8);
+        volatile uint16_t *msiDataHi = (uint16_t *)(msiCapAddr + 12);
+        *msiAddrHi = 0;
+        *msiDataHi = vector;
+    }
 }
 
 void enum_function(uint64_t deviceAddress, uint64_t function) {
@@ -57,16 +66,19 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
     if (pciDeviceHeader->device_id == 0xFFFF)
         return;
 
-    printk("Vendor: %x; Device: %x\n",
+    log_info("PCI", "Vendor: %4x; Device: %4x",
         pciDeviceHeader->vendor_id,
-        pciDeviceHeader->device_id);
-
+        pciDeviceHeader->device_id
+    );
+    
+    // Broad devices
     switch (pciDeviceHeader->class) {
     case 0x0C: // Serial Bus Controller
         switch (pciDeviceHeader->subclass) {
         case 0x03: // USB Controller
             switch (pciDeviceHeader->prog_if) {
             case 0x00: // UHCI Controller
+                log_info("PCI", "Found a UHCI controller");
                 break;
             }
         }
@@ -76,10 +88,18 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
         case 0x06: // Serial ATA Controller
             switch (pciDeviceHeader->prog_if) {
             case 0x01: // AHCI 1.0
+                log_info("PCI", "Found an AHCI controller");
                 break;
             }
         }
         break;
+    }
+
+    // Specific devices
+    if (pciDeviceHeader->vendor_id == 0x1234 &&
+        pciDeviceHeader->device_id == 0x11E8) { // The EDU device in QEMU
+        pci_enable_msi(pciDeviceHeader, 0xA0);
+        dev_edu_init((pci_hdr0_t *)pciDeviceHeader);
     }
 }
 
@@ -137,4 +157,6 @@ void pci_init() {
         for (uint64_t bus = dev_cfg->start_bus; bus < dev_cfg->end_bus; bus++)
             enum_bus(dev_cfg->base_addr, bus);
     }
+
+    log_ok("PCI", "PCI initialized\n");
 }

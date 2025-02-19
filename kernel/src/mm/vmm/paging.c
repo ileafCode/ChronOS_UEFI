@@ -1,6 +1,6 @@
 #include <mm/vmm/paging.h>
 #include <mm/pmm/pmm.h>
-#include <printk/printk.h>
+#include <logging/logging.h>
 #include <string/string.h>
 
 void pde_setflag(uint64_t *pde, enum ptflag flag, int enabled) {
@@ -184,6 +184,7 @@ void paging_unmap(void *virtual) {
 void paging_init(boot_info_t *boot_info) {
     pml4 = pmm_getpage();
     memset(pml4, 0, 0x1000);
+    log_info("PAGE", "Initialized base PML4 page");
 
     uint64_t mMapEntries = boot_info->mMapSize / boot_info->mMapDescSize;
 
@@ -191,7 +192,7 @@ void paging_init(boot_info_t *boot_info) {
         __paging_map((void *)t, (void *)t, NULL);
     }
     
-    printk("Mapped memory\n");
+    log_info("PAGE", "Mapped memory");
     
     uint64_t fbBase = (uint64_t)boot_info->framebuffer->address;
     uint64_t fbSize = (uint64_t)boot_info->framebuffer->buf_size + 0x1000;
@@ -199,8 +200,8 @@ void paging_init(boot_info_t *boot_info) {
         __paging_map((void *)t, (void *)t, NULL);
     }
     
-    printk("Mapped framebuffer\n");
+    log_info("PAGE", "Mapped framebuffer");
     
     asm volatile ("mov %0, %%cr3" : : "r"(pml4));
-    printk("Paging initialized (CR3: 0x%x)\n", pml4);
+    log_ok("PAGE", "Paging initialized (CR3: 0x%x)\n", pml4);
 }
