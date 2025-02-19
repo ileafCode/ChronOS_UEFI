@@ -14,7 +14,7 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [x] Stack trace
 
 ### Timers
-- [ ] HPET
+- [X] HPET
 - [ ] PIT
 - [ ] Base timer 'class'
 
