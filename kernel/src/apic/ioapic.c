@@ -84,5 +84,5 @@ void ioapic_init() {
     for (uint32_t i = 0; i < max_entries; ++i)
         ioapic_set_entry(i, IOAPIC_ENTRY_MASK);
     
-    log_ok("IOAPIC", "IOAPIC initialized\n");
+    log_ok("IOAPIC", "IOAPIC initialized");
 }

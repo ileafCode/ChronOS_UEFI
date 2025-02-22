@@ -32,5 +32,5 @@ void gdt_init() {
     gdt_desc.size = sizeof(gdt_t) - 1;
     gdt_desc.offset = (uint64_t)&default_gdt;
     load_gdt(&gdt_desc);
-    log_ok("GDT", "GDT and TSS initialized\n");
+    log_ok("GDT", "GDT and TSS initialized");
 }

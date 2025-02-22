@@ -21,8 +21,7 @@ void hpet_usleep(uint64_t us) {
     uint64_t ticks_to_wait = (us / 10) * ticks_per_10us;
     volatile uint64_t now = hpet_read(HPET_MAIN_COUNTER);
 
-    while ((hpet_read(HPET_MAIN_COUNTER) - now) < ticks_to_wait)
-        asm volatile ("" ::: "memory");
+    while ((hpet_read(HPET_MAIN_COUNTER) - now) < ticks_to_wait);
 }
 
 uint64_t hpet_get_ticks() {
@@ -67,6 +66,6 @@ int hpet_init() {
 
     ioapic_set_entry(ioapic_remap_irq(0), 0x20);
 
-    log_ok("HPET", "HPET initialized\n");
+    log_ok("HPET", "HPET initialized");
     return 0;
 }

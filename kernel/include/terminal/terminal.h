@@ -11,7 +11,7 @@ void terminal_set_fg_color_palette(uint8_t c);
 void terminal_set_bg_color_palette(uint8_t c);
 
 void terminal_clear();
-void terminal_putc(char chr);
+void terminal_putc(unsigned char chr);
 void terminal_puts(char *string);
 void terminal_init(gop_framebuffer_t *fb, psf1_font_t *font);
 

@@ -203,5 +203,5 @@ void paging_init(boot_info_t *boot_info) {
     log_info("PAGE", "Mapped framebuffer");
     
     asm volatile ("mov %0, %%cr3" : : "r"(pml4));
-    log_ok("PAGE", "Paging initialized (CR3: 0x%x)\n", pml4);
+    log_ok("PAGE", "Paging initialized (CR3: 0x%x)", pml4);
 }

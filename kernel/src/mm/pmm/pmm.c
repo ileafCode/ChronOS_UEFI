@@ -12,7 +12,7 @@ typedef struct mem_block {
 uint8_t *bitmap = (uint8_t*)0x20000;
 uint64_t bitmap_size = 0;
 
-void *start_of_mem = NULL;
+volatile void *start_of_mem = NULL;
 
 mem_block_t *mem_blocks = (mem_block_t*)0x1F000;
 int num_mem_blocks = 0;
@@ -84,7 +84,7 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
     bitmap_size = ((memory_size / 4096) / 8) + 1;
     log_info("PMM", "Got memory and bitmap size");
 
-    log_ok("PMM", "PMM initialized\n");
+    log_ok("PMM", "PMM initialized");
 }
 
 void *pmm_getpage() {

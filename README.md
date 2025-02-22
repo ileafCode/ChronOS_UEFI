@@ -28,7 +28,8 @@ ChronOS64 is the 64-bit version of ChronOS.
 
 ### Drivers
 - [x] QEMU EDU
-- [ ] IDE
+- [x] E1000
+- [ ] AHCI
 - [ ] UHCI
 - [ ] AC97 (maybe)
 
@@ -40,6 +41,14 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [ ] ext2 (maybe)
 - [ ] VFS
 
+### Other
+- [x] AML interpreter (LAI library)
+- [x] Basic heap (SHMALL)
+
 ### Future
 - [ ] Userspace
 - [ ] Window manager (maybe)
+
+## Other libraries used in this project
+- LAI (Lightweight AML interpreter) https://github.com/managarm/lai/tree/master
+- SHMALL (Simple Heap Memory ALLocator) https://github.com/CCareaga/heap_allocator

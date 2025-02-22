@@ -5,6 +5,7 @@
 
 // All drivers
 #include <drivers/edu_qemu/edu.h>
+#include <drivers/ethernet/e1000/e1000.h>
 
 uint32_t pci_find_capability(pci_hdr0_t *pciDeviceHeader, uint8_t capID) {
     uint8_t ptr = pciDeviceHeader->capabilities_ptr;
@@ -26,7 +27,7 @@ void pci_enable_msi(pci_dev_hdr_t *pciDeviceHeader, uint8_t vector) {
     // 0x05 is the ID for MSI
     volatile uint32_t msiCapAddr = pci_find_capability((pci_hdr0_t *)pciDeviceHeader, 0x05);
     if (!msiCapAddr) {
-        printk("MSI capability not found for device @ %p\n", pciDeviceHeader);
+        printk("MSI capability not found for device @ %lx\n", pciDeviceHeader);
         return;
     }
     
@@ -51,6 +52,8 @@ void pci_enable_msi(pci_dev_hdr_t *pciDeviceHeader, uint8_t vector) {
     }
 }
 
+uint64_t current_bus, current_device, current_func;
+
 void enum_function(uint64_t deviceAddress, uint64_t function) {
     uint64_t offset = function << 12;
     uint64_t functionAddress = deviceAddress + offset;
@@ -59,6 +62,8 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
         (void *)((uint64_t)functionAddress & 0xFFFFFFFFFFFFF000),
         NULL
     );
+
+    current_func = function;
 
     pci_dev_hdr_t *pciDeviceHeader = (pci_dev_hdr_t *)functionAddress;
     if (pciDeviceHeader->device_id == 0)
@@ -101,6 +106,10 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
         pci_enable_msi(pciDeviceHeader, 0xA0);
         dev_edu_init((pci_hdr0_t *)pciDeviceHeader);
     }
+    if (pciDeviceHeader->vendor_id == 0x8086 &&
+        pciDeviceHeader->device_id == 0x100E) { // e1000 for QEMU
+        dev_e1000_init((pci_hdr0_t *)pciDeviceHeader, current_bus, current_device, current_func);
+    }
 }
 
 void enum_dev(uint64_t busAddress, uint32_t device) {
@@ -112,6 +121,8 @@ void enum_dev(uint64_t busAddress, uint32_t device) {
         (void *)((uint64_t)deviceAddress & 0xFFFFFFFFFFFFF000),
         NULL
     );
+
+    current_device = (uint64_t)device;
 
     pci_dev_hdr_t *pciDeviceHeader = (pci_dev_hdr_t *)deviceAddress;
 
@@ -133,6 +144,9 @@ void enum_bus(uint64_t baseAddress, uint32_t bus) {
         (void *)((uint64_t)busAddress & 0xFFFFFFFFFFFFF000),
         NULL
     );
+
+    current_bus = (uint64_t)bus;
+
     pci_dev_hdr_t *pciDeviceHeader = (pci_dev_hdr_t *)busAddress;
 
     if (pciDeviceHeader->device_id == 0)
@@ -158,5 +172,5 @@ void pci_init() {
             enum_bus(dev_cfg->base_addr, bus);
     }
 
-    log_ok("PCI", "PCI initialized\n");
+    log_ok("PCI", "PCI initialized");
 }

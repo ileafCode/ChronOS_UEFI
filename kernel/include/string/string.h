@@ -6,6 +6,8 @@
 
 void* memset(void* bufptr, int value, size_t size);
 
+void* memcpy(void* restrict dstptr, const void* restrict srcptr, size_t size);
+
 // Size is NOT in bytes, it is in 32-bit words.
 void *memset32(void *bufptr, int value, size_t size);
 

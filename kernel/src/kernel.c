@@ -13,6 +13,9 @@
 #include <apic/ioapic.h>
 #include <pci/pci.h>
 #include <logging/logging.h>
+#include <utils/panic.h>
+#include <shmall_wrapper.h>
+#include <lai/helpers/sci.h>
 
 #include <timers/hpet/hpet.h>
 
@@ -38,27 +41,35 @@ void _start(boot_info_t *boot_info) {
         asm volatile ("cli;hlt");
     }
 
+    heap_init();
+
     acpi_init(boot_info);
 
     lapic_init();
     ioapic_init();
 
     hpet_init();
+
+    lai_enable_acpi(1); // TODO enable sci interrupts or whatever ig
+
     pci_init();
-    enable_sce();
+    //enable_sce();
 
     terminal_set_fg_color_palette(10);
     printk("\nDone\n\n");
     terminal_set_fg_color_palette(15);
+
+    //kernel_panic("Test panic screen");
 
     for (int i = 0; i < 8; i++) {
         terminal_set_fg_color_palette(i);
         terminal_set_bg_color_palette(i + 8);
         printk("# ");
     }
-    printk("\n");
     terminal_set_fg_color_palette(15);
     terminal_set_bg_color_palette(0);
+
+    printk("\n");
 
     ioapic_set_entry(ioapic_remap_irq(1), 0x21);
 

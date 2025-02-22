@@ -36,10 +36,11 @@
     pop rax
 %endmacro
 
-%macro int_stub 1
+%macro int_stub 2
     pushaq
 
     mov rdi, rsp
+    mov rsi, %2
     call %1
 
     popaq
@@ -68,6 +69,11 @@ timer_irq:
     irq_stub timer_handler
 GLOBAL timer_irq
 
+EXTERN sci_handler
+sci_irq:
+    irq_stub sci_handler
+GLOBAL sci_irq
+
 EXTERN kbd_ps2_handler
 kbd_ps2_irq:
     irq_stub kbd_ps2_handler
@@ -78,13 +84,22 @@ edu_irq:
     irq_stub edu_irq_handler
 GLOBAL edu_irq
 
-; Exceptions
-EXTERN div0_handler
-div0_int:
-    int_stub div0_handler
-GLOBAL div0_int
+EXTERN e1000_irq_handler
+e1000_irq:
+    irq_stub e1000_irq_handler
+GLOBAL e1000_irq
 
-EXTERN pf_handler
-pf_int:
-    int_stub pf_handler
-GLOBAL pf_int
+; Exceptions
+EXTERN exception_handler
+
+%macro DEFINE_EXCEPTION 1
+    exception%1:
+        int_stub exception_handler, %1
+    GLOBAL exception%1
+%endmacro
+
+%assign i 0
+%rep 32
+    DEFINE_EXCEPTION i
+    %assign i i+1
+%endrep

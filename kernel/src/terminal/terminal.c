@@ -66,7 +66,7 @@ void terminal_scroll() {
     cursor_y -= char_height;
 }
 
-void terminal_putc(char chr) {
+void terminal_putc(unsigned char chr) {
     if (chr == '\n') {
         cursor_x = 0;
         cursor_y += char_height;

@@ -54,5 +54,5 @@ void lapic_init() {
     write_lapic_register(LAPIC_TPR, 0);
     write_lapic_register(LAPIC_EOI, 0);
 
-    log_ok("LAPIC", "LAPIC initialized\n");
+    log_ok("LAPIC", "LAPIC initialized");
 }

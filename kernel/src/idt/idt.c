@@ -37,5 +37,5 @@ void idt_init() {
     asm("lidt %0" : : "m"(idtr));
     asm volatile ("sti");
 
-    log_ok("IDT", "IDT initialized\n");
+    log_ok("IDT", "IDT initialized");
 }
