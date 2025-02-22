@@ -6,6 +6,7 @@
 #include <apic/ioapic.h>
 #include <io/io.h>
 #include <lai/helpers/pci.h>
+#include <net/net.h>
 
 uint16_t e1000_io_base;
 uint64_t e1000_mem_base;
@@ -178,6 +179,8 @@ void dev_e1000_handle_recv() {
         uint8_t *buf = (uint8_t *)rx_descs[rx_cur]->addr;
         uint16_t len = rx_descs[rx_cur]->length;
 
+        net_handle((void *)buf, (int)len);
+        
         // Here you should inject the received packet into your network stack
         rx_descs[rx_cur]->status = 0;
         old_cur = rx_cur;
@@ -191,7 +194,7 @@ void dev_e1000_linkup() {
 	dev_e1000_write(REG_CTRL, val | ECTRL_SLU);
 }
 
-int dev_e1000_send_packet(const void * p_data, uint16_t p_len) {    
+int dev_e1000_send_data(const void *p_data, uint16_t p_len) {    
     tx_descs[tx_cur]->addr = (uint64_t)p_data;
     tx_descs[tx_cur]->length = p_len;
     tx_descs[tx_cur]->cmd = CMD_EOP | CMD_IFCS | CMD_RS;
@@ -204,7 +207,6 @@ int dev_e1000_send_packet(const void * p_data, uint16_t p_len) {
 }
 
 void e1000_irq_handler() {
-    log_info("E1000", "IRQ");
     dev_e1000_write(REG_IMASK, 0x1);
        
     uint32_t status = dev_e1000_read(0xc0);
@@ -215,6 +217,10 @@ void e1000_irq_handler() {
     } else if (status & 0x80) {
         dev_e1000_handle_recv();
     }
+}
+
+uint8_t *dev_e1000_get_mac_addr() {
+    return mac_address;
 }
 
 void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_t cur_func) {
@@ -246,6 +252,7 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
         hdr->hdr.command |= (1 << 0);
     }
 
+    // Bus mastering
     hdr->hdr.command |= (1 << 2);
 
     log_info("E1000", "%s @ %lx",

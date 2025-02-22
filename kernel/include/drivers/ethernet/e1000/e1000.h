@@ -111,6 +111,8 @@ typedef struct e1000_tx_desc {
     volatile uint16_t special;
 } __attribute__((packed)) e1000_tx_desc_t;
 
+uint8_t *dev_e1000_get_mac_addr();
+int dev_e1000_send_data(const void *p_data, uint16_t p_len);
 void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_t cur_func);
 
 #endif

@@ -16,8 +16,8 @@
 #include <utils/panic.h>
 #include <shmall_wrapper.h>
 #include <lai/helpers/sci.h>
-
 #include <timers/hpet/hpet.h>
+#include <net/net.h>
 
 extern void enable_sce();
 extern void enable_optimizations();
@@ -28,7 +28,6 @@ void _start(boot_info_t *boot_info) {
     terminal_init(boot_info->framebuffer, boot_info->psf1_Font);
     terminal_clear();
 
-    //while(1);
     gdt_init();
     idt_init();
 
@@ -50,11 +49,14 @@ void _start(boot_info_t *boot_info) {
 
     hpet_init();
 
-    lai_enable_acpi(1); // TODO enable sci interrupts or whatever ig
+    lai_enable_acpi(1);
 
     pci_init();
-    //enable_sce();
 
+    net_init();
+
+    enable_sce();
+    
     terminal_set_fg_color_palette(10);
     printk("\nDone\n\n");
     terminal_set_fg_color_palette(15);

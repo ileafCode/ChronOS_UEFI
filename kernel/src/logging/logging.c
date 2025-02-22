@@ -12,13 +12,11 @@ void log_info(char *module, char *fmt, ...) {
     va_start(args, fmt);
     vprintk(fmt, args);
     va_end(args);
-
     terminal_putc('\n');
 #endif
 }
 
-void log_ok(char *module, char *fmt, ...)
-{
+void log_ok(char *module, char *fmt, ...) {
 #if LOG_LEVEL <= LOG_LEVEL_HIGH
     terminal_putc('[');
     terminal_set_fg_color_palette(10);

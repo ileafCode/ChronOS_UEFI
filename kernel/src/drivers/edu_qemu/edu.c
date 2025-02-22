@@ -66,11 +66,15 @@ void dev_edu_init(pci_hdr0_t *hdr) {
 
     edu_memory = (volatile uint32_t *)((uint64_t)hdr->bar0);
 
+    log_info("EDU", "Testing the EDU...");
+
     // Doing a few tests
     if (!dev_edu_is_live()) {
         log_error("EDU", "EDU is not alive");
         return;
     }
+
+    log_info("EDU", "EDU is alive");
 
     if (dev_edu_factorial(5) != 120) {
         log_error("EDU", "EDU doesn't know how to calculate factorial");
@@ -78,4 +82,5 @@ void dev_edu_init(pci_hdr0_t *hdr) {
     }
 
     idt_set_gate(edu_irq, 0xA0, IDT_TA_InterruptGate, 0x08);
+    log_ok("EDU", "EDU is initialized");
 }
