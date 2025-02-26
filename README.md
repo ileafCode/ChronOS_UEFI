@@ -41,6 +41,11 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [ ] ext2 (maybe)
 - [ ] VFS
 
+### Network protocols
+- [x] ARP
+- [ ] ICMP
+- [ ] UDP
+
 ### Other
 - [x] AML interpreter (LAI library)
 - [x] Basic heap (SHMALL)
@@ -52,3 +57,6 @@ ChronOS64 is the 64-bit version of ChronOS.
 ## Other libraries used in this project
 - LAI (Lightweight AML interpreter) https://github.com/managarm/lai/tree/master
 - SHMALL (Simple Heap Memory ALLocator) https://github.com/CCareaga/heap_allocator
+
+## Note
+This is NOT a Unix clone, POSIX clone or anything. Im trying to have fun.

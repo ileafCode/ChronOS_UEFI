@@ -3,7 +3,7 @@
 #include <terminal/terminal.h>
 
 #define PRINTK_FLAG_LONG 1 << 0
-#define PRINTK_FLAG_FIELD_WIDTH 1 << 1
+#define PRINTK_FLAG_FIELD_WIDTH_ZERO 1 << 1
 
 #include <stdbool.h>
 
@@ -76,9 +76,13 @@ void vprintk(const char *fmt, va_list args) {
         }
 
         int field_width = 0;
+        int i_fw = 0;
 
         while (isdigit(*fmt)) {
+            if ((!i_fw) && (*fmt == '0'))
+                flags |= PRINTK_FLAG_FIELD_WIDTH_ZERO;
             field_width = field_width * 10 + (*fmt - '0');
+            i_fw++;
             fmt++;
         }
 
@@ -111,7 +115,7 @@ void vprintk(const char *fmt, va_list args) {
 
             if (field_width > strlen(temp)) {
                 for (int i = 0; i < field_width - strlen(temp); i++) {
-                    terminal_putc(' ');
+                    terminal_putc(flags & PRINTK_FLAG_FIELD_WIDTH_ZERO ? '0' : ' ');
                 }
             }
 

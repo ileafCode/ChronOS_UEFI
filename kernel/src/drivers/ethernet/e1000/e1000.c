@@ -11,12 +11,16 @@
 uint16_t e1000_io_base;
 uint64_t e1000_mem_base;
 int e1000_io_type = -1; // 0 = MMIO, 1 = port IO
-uint8_t mac_address[6];
+uint8_t e1000_mac_addr[6];
+
+ethernet_dev_t *e1000_device;
 
 e1000_rx_desc_t *rx_descs[E1000_NUM_RX_DESC];
 e1000_tx_desc_t *tx_descs[E1000_NUM_TX_DESC];
 uint16_t rx_cur;
 uint16_t tx_cur;
+
+int e1000_is_init = 0;
 
 extern void e1000_irq();
 
@@ -77,20 +81,20 @@ int dev_e1000_get_mac() {
     if (dev_e1000_detect_eeprom()) {
         uint32_t temp;
         temp = dev_e1000_eeprom_read(0);
-        mac_address[0] = temp & 0xFF;
-        mac_address[1] = temp >> 8;
+        e1000_mac_addr[0] = temp & 0xFF;
+        e1000_mac_addr[1] = temp >> 8;
         temp = dev_e1000_eeprom_read(1);
-        mac_address[2] = temp & 0xFF;
-        mac_address[3] = temp >> 8;
+        e1000_mac_addr[2] = temp & 0xFF;
+        e1000_mac_addr[3] = temp >> 8;
         temp = dev_e1000_eeprom_read(2);
-        mac_address[4] = temp & 0xFF;
-        mac_address[5] = temp >> 8;
+        e1000_mac_addr[4] = temp & 0xFF;
+        e1000_mac_addr[5] = temp >> 8;
     } else {
         uint8_t *mac8 = (uint8_t *)(e1000_mem_base + 0x5400);
         uint32_t *mac32 = (uint32_t *)(e1000_mem_base + 0x5400);
         if (mac32[0] != 0)
             for (int i = 0; i < 6; i++)
-                mac_address[i] = mac8[i];
+                e1000_mac_addr[i] = mac8[i];
         else
             return 0;
     }
@@ -151,8 +155,8 @@ void dev_e1000_init_tx() {
 
     dev_e1000_write(REG_TXDESCLEN, E1000_NUM_TX_DESC * 16);
 
-    dev_e1000_write( REG_TXDESCHEAD, 0);
-    dev_e1000_write( REG_TXDESCTAIL, 0);
+    dev_e1000_write(REG_TXDESCHEAD, 0);
+    dev_e1000_write(REG_TXDESCTAIL, 0);
     tx_cur = 0;
     dev_e1000_write(REG_TCTRL, TCTL_EN
         | TCTL_PSP
@@ -179,7 +183,7 @@ void dev_e1000_handle_recv() {
         uint8_t *buf = (uint8_t *)rx_descs[rx_cur]->addr;
         uint16_t len = rx_descs[rx_cur]->length;
 
-        net_handle((void *)buf, (int)len);
+        net_handle(e1000_device, (void *)buf, (int)len);
         
         // Here you should inject the received packet into your network stack
         rx_descs[rx_cur]->status = 0;
@@ -194,36 +198,35 @@ void dev_e1000_linkup() {
 	dev_e1000_write(REG_CTRL, val | ECTRL_SLU);
 }
 
-int dev_e1000_send_data(const void *p_data, uint16_t p_len) {    
+void dev_e1000_send_data(const void *p_data, int p_len) {    
     tx_descs[tx_cur]->addr = (uint64_t)p_data;
     tx_descs[tx_cur]->length = p_len;
     tx_descs[tx_cur]->cmd = CMD_EOP | CMD_IFCS | CMD_RS;
     tx_descs[tx_cur]->status = 0;
     uint8_t old_cur = tx_cur;
     tx_cur = (tx_cur + 1) % E1000_NUM_TX_DESC;
-    dev_e1000_write(REG_TXDESCTAIL, tx_cur);   
-    while (!(tx_descs[old_cur]->status & 0xff));    
-    return 0;
+    dev_e1000_write(REG_TXDESCTAIL, tx_cur);
+    while (!(tx_descs[old_cur]->status & 0xff));
 }
 
 void e1000_irq_handler() {
     dev_e1000_write(REG_IMASK, 0x1);
-       
     uint32_t status = dev_e1000_read(0xc0);
+    if (!e1000_is_init) return;
+
     if (status & 0x04) {
         dev_e1000_linkup();
     } else if (status & 0x10) {
-        log_info("E1000", "Threshold is ok");
+
     } else if (status & 0x80) {
         dev_e1000_handle_recv();
     }
 }
 
-uint8_t *dev_e1000_get_mac_addr() {
-    return mac_address;
-}
-
 void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_t cur_func) {
+    if (e1000_is_init)
+        return;
+    
     acpi_resource_t irq_resource;
     int ret = lai_pci_route(&irq_resource, 0, cur_bus, cur_dev, cur_func);
     if (ret != LAI_ERROR_NONE) {
@@ -266,8 +269,8 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
         log_error("E1000", "Could not get MAC address.");
     } else {
         log_info("E1000", "MAC address: %2x:%2x:%2x:%2x:%2x:%2x",
-            mac_address[0], mac_address[1], mac_address[2],
-            mac_address[3], mac_address[4], mac_address[5]);
+            e1000_mac_addr[0], e1000_mac_addr[1], e1000_mac_addr[2],
+            e1000_mac_addr[3], e1000_mac_addr[4], e1000_mac_addr[5]);
     }
 
     dev_e1000_linkup();
@@ -281,5 +284,8 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
     dev_e1000_init_rx();
     dev_e1000_init_tx();
 
+    e1000_device = ethernet_register_device("e1000", e1000_mac_addr, dev_e1000_send_data);
+
+    e1000_is_init = 1;
     log_ok("E1000", "E1000 NIC initialized");
 }

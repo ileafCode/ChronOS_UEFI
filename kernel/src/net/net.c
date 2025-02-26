@@ -3,6 +3,7 @@
 #include <net/arp/arp.h>
 #include <string/string.h>
 #include <drivers/ethernet/e1000/e1000.h>
+#include <net/ipv4/ipv4.h>
 
 /* Swap the bytes of a 16-bit value */
 static inline uint16_t swap16(uint16_t x) {
@@ -51,10 +52,13 @@ uint32_t htonl(uint32_t hostlong) {
 
 uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-void net_handle(ethernet_packet_t *data, int length) {
-    if (!memcmp(data->destination, dev_e1000_get_mac_addr(), 6) || !memcmp(data->destination, broadcast_mac, 6)) {
+void net_handle(ethernet_dev_t *device, ethernet_packet_t *data, int length) {
+    if (!memcmp(data->destination, device->mac, 6) || !memcmp(data->destination, broadcast_mac, 6)) {
         if (ntohs(data->type) == 0x806) { // ARP
-            arp_handle((arp_packet_t *)(&data->payload));
+            arp_handle(device, (arp_packet_t *)(&data->payload));
+        } else if (ntohs(data->type) == 0x800) {
+            ipv4_handle(device, (ipv4_packet_t *)(&data->payload), length);
+            //log_info("NET", "Other protocol: %x", ntohs(data->type));
         }
     }
     //arp_recieve_data((arp_packet_t *)data, length);

@@ -71,10 +71,10 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
     if (pciDeviceHeader->device_id == 0xFFFF)
         return;
 
-    log_info("PCI", "Vendor: %4x; Device: %4x",
-        pciDeviceHeader->vendor_id,
-        pciDeviceHeader->device_id
-    );
+    //log_info("PCI", "Vendor: %4x; Device: %4x",
+    //    pciDeviceHeader->vendor_id,
+    //    pciDeviceHeader->device_id
+    //);
     
     // Broad devices
     switch (pciDeviceHeader->class) {

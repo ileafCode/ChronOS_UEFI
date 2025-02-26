@@ -2,6 +2,7 @@
 #define _KERNEL_NET_ARP_H
 
 #include <stdint.h>
+#include <drivers/ethernet/ethernet.h>
 
 #define ARP_REQUEST 1
 #define ARP_REPLY 2
@@ -18,6 +19,6 @@ typedef struct arp_packet {
     uint8_t dst_protocol_addr[4];
 } __attribute__((packed)) arp_packet_t;
 
-void arp_handle(arp_packet_t *data);
+void arp_handle(ethernet_dev_t *device, arp_packet_t *data);
 
 #endif
