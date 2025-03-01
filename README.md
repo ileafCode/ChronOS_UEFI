@@ -19,7 +19,7 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [ ] Base timer 'class'
 
 ### PCI
-- [ ] Enumeration
+- [x] Enumeration
 - [ ] Loading drivers
 
 ### Interrupts
