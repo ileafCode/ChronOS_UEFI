@@ -236,6 +236,7 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
         uint8_t irq_num = pci_alloc_int_handler();
         idt_set_gate(e1000_irq, irq_num, IDT_TA_InterruptGate, 0x08);
         ioapic_set_entry(ioapic_remap_irq(irq_resource.base), irq_num);
+        log_info("E1000", "Interrupt vector is %x", irq_num);
     }
 
     if ((hdr->bar0 & 0x01) == 0) { // MMIO
@@ -263,9 +264,7 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
         e1000_io_type == 0 ? "MMIO address" : "Port IO address",
         e1000_io_type == 0 ? e1000_mem_base : e1000_io_base
     );
-
-    log_info("E1000", "Int Line: %d, Int Pin: %d", hdr->interrupt_line, hdr->interrupt_pin);
-
+    
     if (!dev_e1000_get_mac()) {
         log_error("E1000", "Could not get MAC address.");
     } else {
