@@ -233,8 +233,9 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
         log_error("E1000", "No IRQ pin route found");
         return;
     } else {
-        idt_set_gate(e1000_irq, 0xA1, IDT_TA_InterruptGate, 0x08);
-        ioapic_set_entry(ioapic_remap_irq(irq_resource.base), 0xA1);
+        uint8_t irq_num = pci_alloc_int_handler();
+        idt_set_gate(e1000_irq, irq_num, IDT_TA_InterruptGate, 0x08);
+        ioapic_set_entry(ioapic_remap_irq(irq_resource.base), irq_num);
     }
 
     if ((hdr->bar0 & 0x01) == 0) { // MMIO

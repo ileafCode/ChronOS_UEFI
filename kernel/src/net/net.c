@@ -65,5 +65,5 @@ void net_handle(ethernet_dev_t *device, ethernet_packet_t *data, int length) {
 }
 
 void net_init() {
-    log_ok("NET", "Networking initialized");
+    //log_ok("NET", "Networking initialized");
 }

@@ -55,6 +55,7 @@ typedef struct mcfg {
     uint64_t resv;
 } __attribute__((packed)) mcfg_t;
 
+uint8_t pci_alloc_int_handler();
 void pci_init();
 
 #endif

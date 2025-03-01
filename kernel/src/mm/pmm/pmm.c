@@ -1,6 +1,7 @@
 #include <mm/pmm/pmm.h>
 #include <terminal/terminal.h>
 #include <logging/logging.h>
+#include <string/string.h>
 
 typedef struct mem_block {
     void *address;
@@ -9,7 +10,7 @@ typedef struct mem_block {
 
 // 0 - FREE
 // 1 - USED
-uint8_t *bitmap = (uint8_t*)0x20000;
+uint8_t *bitmap;
 uint64_t bitmap_size = 0;
 
 volatile void *start_of_mem = NULL;
@@ -72,10 +73,13 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
 
     for (int i = 0; i < num_mem_blocks; i++) {
         if (mem_blocks[i].size * 4096 > largestFreeMemSegSize) {
-            largestFreeMemSeg = mem_blocks[i].address;
-            largestFreeMemSegSize = mem_blocks[i].size * 4096;
+            largestFreeMemSeg = (void *)((uint64_t)(mem_blocks[i].address) + 0x4000);
+            largestFreeMemSegSize = (mem_blocks[i].size * 0x1000) - 0x4000;
+            bitmap = (uint8_t *)((uint64_t)(largestFreeMemSeg) - 0x4000);
         }
     }
+
+    memset(bitmap, 0, 0x4000);
 
     start_of_mem = largestFreeMemSeg;
     log_info("PMM", "Located largest free memory segment");
@@ -96,6 +100,7 @@ void *pmm_getpage() {
     //lastAllocatedPage = idx;
 
     void *pageaddr = (void *)((uint64_t)(start_of_mem) + (0x1000 * idx));
+    //printk("%lx\n", pageaddr);
     return pageaddr;
 }
 

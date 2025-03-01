@@ -2,12 +2,13 @@
 #include <shmall_wrapper.h>
 #include <mm/pmm/pmm.h>
 #include <string/string.h>
+#include <logging/logging.h>
 
 heap_t *heap;
 void *region;
 
 void *kmalloc(int size) {
-    heap_alloc(heap, size);
+    return heap_alloc(heap, size);
 }
 
 void kfree(void *ptr) {
@@ -19,7 +20,7 @@ void heap_init() {
     memset(heap, 0, sizeof(heap_t));
 
     region = pmm_getpage();
-    for (int i = 1; i < 0xF0; i++) {
+    for (int i = 1; i < 0x100; i++) {
         pmm_getpage();
     }
     memset(region, 0, HEAP_INIT_SIZE);

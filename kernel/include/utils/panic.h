@@ -4,6 +4,6 @@
 
 #include <stdint.h>
 
-void kernel_panic(char *message);
+void kernel_panic(const char *message);
 
 #endif

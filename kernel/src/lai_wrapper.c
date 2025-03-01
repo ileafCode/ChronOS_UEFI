@@ -25,7 +25,7 @@ void *laihost_realloc(void *ptr, size_t newsize, size_t oldsize) {
 }
 
 void laihost_log(int type, const char *str) {
-    log_info("LAI", str);
+    log_info("LAI", "%s", str);
 }
 
 void laihost_panic(const char *msg) {

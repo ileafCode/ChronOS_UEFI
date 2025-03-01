@@ -6,6 +6,13 @@
 // All drivers
 #include <drivers/edu_qemu/edu.h>
 #include <drivers/ethernet/e1000/e1000.h>
+#include <drivers/storage/ahci/ahci.h>
+
+int currentIntHandlerNum = 0x90;
+
+uint8_t pci_alloc_int_handler() {
+    return currentIntHandlerNum++;
+}
 
 uint32_t pci_find_capability(pci_hdr0_t *pciDeviceHeader, uint8_t capID) {
     uint8_t ptr = pciDeviceHeader->capabilities_ptr;
@@ -93,7 +100,7 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
         case 0x06: // Serial ATA Controller
             switch (pciDeviceHeader->prog_if) {
             case 0x01: // AHCI 1.0
-                log_info("PCI", "Found an AHCI controller");
+                dev_ahci_init((pci_hdr0_t *)pciDeviceHeader, current_bus, current_device, current_func);
                 break;
             }
         }

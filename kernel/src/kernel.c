@@ -19,6 +19,8 @@
 #include <timers/hpet/hpet.h>
 #include <net/net.h>
 
+#include <lai/helpers/pm.h>
+
 extern void enable_sce();
 extern void enable_optimizations();
 
@@ -35,10 +37,27 @@ void _start(boot_info_t *boot_info) {
     paging_init(boot_info);
 
     if (boot_info->rsdp == 0) { // Fatal error
-        log_error("RSDP", "No RSDP/XSDP found.");
-        printk("This OS does NOT support computers without ACPI.\n");
+        kernel_panic("No RSDP/XSDP found.");
+        printk("This OS does not support computers without ACPI.\n");
         asm volatile ("cli;hlt");
     }
+
+    // Set a new stack
+    uint8_t *stack = (uint8_t*)pmm_getpage();
+    for (int i = 1; i < 32; i++) {
+        pmm_getpage();
+    }
+
+    memset(stack, 0, 32 * 0x1000);
+
+    stack += 32 * 0x1000;
+
+    asm volatile (
+        "movq %0, %%rsp"
+        :
+        : "r"(stack)
+        : "rsp"
+    );
 
     heap_init();
 
@@ -51,17 +70,14 @@ void _start(boot_info_t *boot_info) {
 
     lai_enable_acpi(1);
 
-    pci_init();
-
     net_init();
+    pci_init();
 
     enable_sce();
     
     terminal_set_fg_color_palette(10);
     printk("\nDone\n\n");
     terminal_set_fg_color_palette(15);
-
-    //kernel_panic("Test panic screen");
 
     for (int i = 0; i < 8; i++) {
         terminal_set_fg_color_palette(i);

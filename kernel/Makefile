@@ -8,7 +8,7 @@ CC = x86_64-elf-gcc
 ASMC = nasm
 LD = x86_64-elf-ld
 
-CFLAGS = -ffreestanding -fshort-wchar -I include -msse2 -O1
+CFLAGS = -ffreestanding -I include -O1 -msse2
 LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib
 
 SRCDIR := src
@@ -46,8 +46,8 @@ setup:
 	@mkdir $(OBJDIR)
 
 buildimg:
-	dd if=/dev/zero of=$(BUILDDIR)/$(OSNAME).img bs=512 count=2880
-	mformat -i $(BUILDDIR)/$(OSNAME).img -f 1440 ::
+	dd if=/dev/zero of=$(BUILDDIR)/$(OSNAME).img bs=512 count=65536
+	mformat -i $(BUILDDIR)/$(OSNAME).img -h 64 -t 64 -n 32 -c 1 ::
 	mmd -i $(BUILDDIR)/$(OSNAME).img ::/EFI
 	mmd -i $(BUILDDIR)/$(OSNAME).img ::/EFI/BOOT
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BOOTEFI) ::/EFI/BOOT
@@ -56,4 +56,13 @@ buildimg:
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/font.psf ::
 
 run:
-	sudo qemu-system-x86_64 -drive file=$(BUILDDIR)/$(OSNAME).img -netdev vmnet-bridged,id=net0,ifname=en0 -device edu -device e1000,netdev=net0 -device AC97 -m 1G -cpu qemu64 -machine q35 -drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/ovmf_code.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/ovmf_vars.fd",readonly=on -monitor stdio
+	sudo qemu-system-x86_64 -drive file=$(BUILDDIR)/$(OSNAME).img \
+	-audiodev dbus,id=coreaudiodev \
+	-netdev vmnet-bridged,id=net0,ifname=en0 \
+	-device edu \
+	-device e1000,netdev=net0 \
+	-device AC97,audiodev=coreaudiodev \
+	-m 1G -cpu qemu64 -machine q35 \
+	-drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/ovmf_code.fd",readonly=on \
+	-drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/ovmf_vars.fd",readonly=on \
+	-monitor stdio

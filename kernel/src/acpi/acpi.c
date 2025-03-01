@@ -10,7 +10,11 @@
 #include <apic/ioapic.h>
 
 rsdp_t *rsdp;
+
 rsdt_t *rsdt;
+xsdt_t *xsdt; // NULL if not supported
+
+// TODO fix xsdt support and try on a real machine
 
 extern void sci_irq();
 void sci_handler() {
@@ -22,9 +26,21 @@ sdt_hdr_t *acpi_find_table(const char *signature) {
         return NULL;
     }
 
-    int entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
+    int entries;
+    if (xsdt) {
+        entries = (xsdt->h.len - sizeof(xsdt->h)) / 8;
+    } else {
+        entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
+    }
+
     for (int i = 0; i < entries; i++) {
-        sdt_hdr_t *hdr = (sdt_hdr_t *)(uintptr_t)rsdt->table_ptr[i];
+        sdt_hdr_t *hdr;// = (sdt_hdr_t *)(uintptr_t)rsdt->table_ptr[i];
+        if (xsdt) {
+            hdr = (sdt_hdr_t *)(uintptr_t)xsdt->table_ptr[i];
+        } else {
+            hdr = (sdt_hdr_t *)(uintptr_t)rsdt->table_ptr[i];
+        }
+
         if (!memcmp(hdr->signature, signature, 4)) {
             return hdr;
         }
@@ -38,9 +54,21 @@ sdt_hdr_t *acpi_find_nth_table(const char *signature, int idx) {
         return NULL;
     }
 
-    int entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
+    int entries;
+    if (xsdt) {
+        entries = (xsdt->h.len - sizeof(xsdt->h)) / 8;
+    } else {
+        entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
+    }
+
     for (int i = 0; i < entries; i++) {
-        sdt_hdr_t *hdr = (sdt_hdr_t *)(uintptr_t)rsdt->table_ptr[i];
+        sdt_hdr_t *hdr;// = (sdt_hdr_t *)(uintptr_t)rsdt->table_ptr[i];
+        if (xsdt) {
+            hdr = (sdt_hdr_t *)(uintptr_t)xsdt->table_ptr[i];
+        } else {
+            hdr = (sdt_hdr_t *)(uintptr_t)rsdt->table_ptr[i];
+        }
+        
         if (memcmp(hdr->signature, signature, 4) == 0) {
             if (idx == 0) {
                 return hdr;
@@ -54,16 +82,24 @@ sdt_hdr_t *acpi_find_nth_table(const char *signature, int idx) {
 
 void acpi_init(boot_info_t *boot_info) {
     rsdp = (rsdp_t *)boot_info->rsdp;
-    rsdt = (rsdt_t *)((uint64_t)rsdp->rsdt_addr);
-    if (!rsdt) {
-        log_error("ACPI", "No RSDP found. Halting");
-        asm volatile ("cli;hlt");
+
+    if (rsdp->revision > 0) {
+        xsdt = (xsdt_t *)((uint64_t)rsdp->xsdt_addr);
+        paging_map((void *)(xsdt), (void *)(xsdt), NULL);
+        log_info("ACPI", "Mapped XSDT to memory");
+    } else {
+        rsdt = (rsdt_t *)((uint64_t)rsdp->rsdt_addr);
+        paging_map((void *)(rsdt), (void *)(rsdt), NULL);
+        log_info("ACPI", "Mapped RSDT to memory");
     }
 
-    paging_map((void *)(rsdt), (void *)(rsdt), NULL);
-    log_info("ACPI", "Mapped RSDT to memory");
+    int entries;// = (rsdt->h.len - sizeof(rsdt->h)) / 4;
+    if (xsdt) {
+        entries = (xsdt->h.len - sizeof(xsdt->h)) / 8;
+    } else {
+        entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
+    }
 
-    int entries = (rsdt->h.len - sizeof(rsdt->h)) / 4;
     for (int i = 0; i < entries; i++) {
         sdt_hdr_t *hdr = (sdt_hdr_t *)((uint64_t)rsdt->table_ptr[i]);
         paging_map(

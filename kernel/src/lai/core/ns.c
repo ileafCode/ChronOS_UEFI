@@ -495,7 +495,7 @@ void lai_create_namespace(void) {
     lai_state_t state;
 
     // Load the DSDT.
-    void *dsdt_table = (void *)instance->fadt->dsdt;
+    void *dsdt_table = (void *)((uint64_t)instance->fadt->dsdt);
     if (!dsdt_table)
         lai_panic("unable to find ACPI DSDT.");
 

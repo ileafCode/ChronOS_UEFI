@@ -89,6 +89,11 @@ e1000_irq:
     irq_stub e1000_irq_handler
 GLOBAL e1000_irq
 
+EXTERN ahci_irq_handler
+ahci_irq:
+    irq_stub ahci_irq_handler
+GLOBAL ahci_irq
+
 ; Exceptions
 EXTERN exception_handler
 

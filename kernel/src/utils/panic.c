@@ -2,7 +2,7 @@
 #include <terminal/terminal.h>
 #include <printk/printk.h>
 
-void kernel_panic(char *message) {
+void kernel_panic(const char *message) {
     terminal_set_bg_color_palette(1);
     terminal_clear();
     for (int i = 0; i < 40; i++)
