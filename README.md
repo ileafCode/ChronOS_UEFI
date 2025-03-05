@@ -37,9 +37,9 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [ ] Scheduling
 
 ### Filesystems
-- [ ] FAT
+- [x] FAT
 - [ ] ext2 (maybe)
-- [ ] VFS
+- [x] VFS (sort of)
 
 ### Network protocols
 - [x] ARP
@@ -57,6 +57,4 @@ ChronOS64 is the 64-bit version of ChronOS.
 ## Other libraries used in this project
 - LAI (Lightweight AML interpreter) https://github.com/managarm/lai/tree/master
 - SHMALL (Simple Heap Memory ALLocator) https://github.com/CCareaga/heap_allocator
-
-## Note
-This is NOT a Unix clone, POSIX clone or anything. Im trying to have fun.
+- FatFs - Generic FAT Filesystem Module http://elm-chan.org/fsw/ff/

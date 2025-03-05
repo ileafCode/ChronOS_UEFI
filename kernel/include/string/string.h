@@ -18,4 +18,10 @@ int memcmp(const void* aptr, const void* bptr, size_t size);
 
 size_t strlen(const char* str);
 
+char *strchr(char *str, int character);
+
+int strcmp(const char *cs, const char *ct);
+
+char *strcpy(char *dest, const char *src);
+
 #endif

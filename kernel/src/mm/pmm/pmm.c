@@ -18,6 +18,9 @@ volatile void *start_of_mem = NULL;
 mem_block_t *mem_blocks = (mem_block_t*)0x1F000;
 int num_mem_blocks = 0;
 
+extern uint64_t _kern_start;
+extern uint64_t _kern_end;
+
 uint8_t bitmap_get(uint32_t idx) {
     if (idx > bitmap_size * 8)
         return 0;
@@ -54,6 +57,8 @@ uint64_t get_mem_size(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_entries, uint64
     return memorySizeBytes;
 }
 
+void pmm_lockpages(void *addr, int pages);
+
 void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_descsize) {
     uint64_t mMapEntries = mmap_size / mmap_descsize;
 
@@ -89,6 +94,12 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
     log_info("PMM", "Got memory and bitmap size");
 
     log_ok("PMM", "PMM initialized");
+
+    if ((uint64_t)start_of_mem < _kern_start) {
+        uint64_t kernel_size = _kern_end - _kern_start;
+        uint64_t kern_size_pages = (kernel_size / 0x1000) + 1;
+        pmm_lockpages((void *)_kern_start, kern_size_pages);
+    }
 }
 
 void *pmm_getpage() {
@@ -107,4 +118,11 @@ void *pmm_getpage() {
 void pmm_freepage(void *pageaddr) {
     int idx = ((uint64_t)(pageaddr) - (uint64_t)(start_of_mem)) / 0x1000;
     bitmap_set(idx, 0);
+}
+
+void pmm_lockpages(void *addr, int pages) {
+    int idx = ((uint64_t)(addr) - (uint64_t)(start_of_mem)) / 0x1000;
+    for (int i = 0; i < pages; i++) {
+        bitmap_set(idx + i, 1);
+    }
 }

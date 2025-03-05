@@ -10,7 +10,7 @@
 
 extern void ahci_irq();
 
-hba_mem_t *ahci_abar;
+hba_mem_t *ahci_abar = NULL;
 ahci_port_t *ports[32];
 uint8_t portCount;
 
@@ -160,7 +160,7 @@ int dev_ahci_read(ahci_port_t *port, uint64_t sector, uint32_t sectorCount) {
     hba_cmd_table_t *commandTable = (hba_cmd_table_t *)((uintptr_t)cmdHeader->commandTableBaseAddress |
                                                         ((uint64_t)cmdHeader->commandTableBaseAddressUpper << 32));
     memset(commandTable, 0, sizeof(hba_cmd_table_t) + (cmdHeader->prdtLength - 1) * sizeof(hba_prdt_entry_t));
-    commandTable += slot;
+    //commandTable += slot;
     commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)port->buffer;
     commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((uint64_t)port->buffer >> 32);
     commandTable->prdtEntry[0].byteCount = (sectorCount << 9) - 1; // 512 bytes per sector
@@ -170,6 +170,69 @@ int dev_ahci_read(ahci_port_t *port, uint64_t sector, uint32_t sectorCount) {
     cmdFIS->fisType = FIS_TYPE_REG_H2D;
     cmdFIS->commandControl = 1; // command
     cmdFIS->command = ATA_CMD_READ_DMA_EX;
+
+    cmdFIS->lba0 = (uint8_t)sectorL;
+    cmdFIS->lba1 = (uint8_t)(sectorL >> 8);
+    cmdFIS->lba2 = (uint8_t)(sectorL >> 16);
+
+    cmdFIS->lba3 = (uint8_t)sectorH;
+    cmdFIS->lba4 = (uint8_t)(sectorH >> 8);
+    cmdFIS->lba5 = (uint8_t)(sectorH >> 16);
+
+    cmdFIS->deviceRegister = 1 << 6; // LBA mode
+    cmdFIS->countLow = sectorCount & 0xFF;
+    cmdFIS->countHigh = (sectorCount >> 8) & 0xFF;
+
+    uint64_t spin = 0;
+    while ((port->hbaPort->taskFileData & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 10000000)
+        spin++;
+    if (spin == 10000000)
+        return -1;
+
+    port->hbaPort->commandIssue = 1U << slot;
+    dev_ahci_flush_writes(port);
+
+    while (1) {
+        if ((port->hbaPort->commandIssue & (1U << slot)) == 0)
+			break;
+        if (port->hbaPort->interruptStatus & HBA_PxIS_TFES)
+            return -1;
+        asm volatile ("" ::: "memory");
+    }
+    return 0;
+}
+
+int dev_ahci_write(ahci_port_t *port, uint64_t sector, uint32_t sectorCount) {
+    uint32_t sectorL = (uint32_t)sector;
+    uint32_t sectorH = (uint32_t)(sector >> 32);
+
+    int slot = dev_ahci_find_cmdslot(port->hbaPort);
+    if (slot == -1) {
+        return -1;
+    }
+
+    port->hbaPort->interruptStatus = (uint32_t)-1;
+    dev_ahci_flush_writes(port);
+
+    hba_cmd_hdr_t *cmdHeader = (hba_cmd_hdr_t *)((uintptr_t)port->hbaPort->commandListBase);
+    cmdHeader += slot;
+    cmdHeader->commandFISLength = sizeof(FIS_REG_H2D) / sizeof(uint32_t); // command FIS size;
+    cmdHeader->write = 1;
+    cmdHeader->prdtLength = 1;
+
+    hba_cmd_table_t *commandTable = (hba_cmd_table_t *)((uintptr_t)cmdHeader->commandTableBaseAddress |
+                                                        ((uint64_t)cmdHeader->commandTableBaseAddressUpper << 32));
+    memset(commandTable, 0, sizeof(hba_cmd_table_t) + (cmdHeader->prdtLength - 1) * sizeof(hba_prdt_entry_t));
+    //commandTable += slot;
+    commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)port->buffer;
+    commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((uint64_t)port->buffer >> 32);
+    commandTable->prdtEntry[0].byteCount = (sectorCount << 9) - 1; // 512 bytes per sector
+    commandTable->prdtEntry[0].interruptOnCompletion = 1;
+
+    FIS_REG_H2D *cmdFIS = (FIS_REG_H2D *)(&commandTable->commandFIS);
+    cmdFIS->fisType = FIS_TYPE_REG_H2D;
+    cmdFIS->commandControl = 1; // command
+    cmdFIS->command = ATA_CMD_WRITE_DMA_EX;
 
     cmdFIS->lba0 = (uint8_t)sectorL;
     cmdFIS->lba1 = (uint8_t)(sectorL >> 8);
@@ -250,6 +313,8 @@ ahci_port_t *dev_ahci_get_port(int idx) {
 }
 
 void dev_ahci_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_t cur_func) {
+    if (ahci_abar)
+        return;
     // Enable "Memory Space", "Bus Mastering" and disable "Interrupt Disable"
     hdr->hdr.command |= (1 << 1);
     hdr->hdr.command |= (1 << 2);

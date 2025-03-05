@@ -18,12 +18,44 @@
 #include <lai/helpers/sci.h>
 #include <timers/hpet/hpet.h>
 #include <net/net.h>
-
+#include <fs/fat/ff.h>
+#include <fs/vfs.h>
+#include <fs/fat/fat_wrapper.h>
 #include <lai/helpers/pm.h>
 
 extern void enable_sce();
 extern void enable_optimizations();
 
+FRESULT list_dir(const char *path)
+{
+    FRESULT res;
+    DIR dir;
+    FILINFO fno;
+    int nfile, ndir;
+
+    res = f_opendir(&dir, path);                       /* Open the directory */
+    if (res == FR_OK) {
+        nfile = ndir = 0;
+        for (;;) {
+            res = f_readdir(&dir, &fno);                   /* Read a directory item */
+            if (res != FR_OK || fno.fname[0] == 0) break;  /* Error or end of dir */
+            if (fno.fattrib & AM_DIR) {            /* Directory */
+                printk("     <DIR> %s\n", fno.fname);
+                ndir++;
+            } else {                               /* File */
+                printk("%10u %s\n", fno.fsize, fno.fname);
+                nfile++;
+            }
+        }
+        f_closedir(&dir);
+        printk("%d dirs, %d files.\n", ndir, nfile);
+    } else {
+        printk("Failed to open \"%s\". (%u)\n", path, res);
+    }
+    return res;
+}
+
+__attribute__((force_align_arg_pointer))
 void _start(boot_info_t *boot_info) {
     enable_optimizations();
 
@@ -42,23 +74,6 @@ void _start(boot_info_t *boot_info) {
         asm volatile ("cli;hlt");
     }
 
-    // Set a new stack
-    uint8_t *stack = (uint8_t*)pmm_getpage();
-    for (int i = 1; i < 32; i++) {
-        pmm_getpage();
-    }
-
-    memset(stack, 0, 32 * 0x1000);
-
-    stack += 32 * 0x1000;
-
-    asm volatile (
-        "movq %0, %%rsp"
-        :
-        : "r"(stack)
-        : "rsp"
-    );
-
     heap_init();
 
     acpi_init(boot_info);
@@ -74,6 +89,12 @@ void _start(boot_info_t *boot_info) {
     pci_init();
 
     enable_sce();
+
+    vfs_init();
+
+    if (fat_mount("fat1")) {
+        printk("Failed to mount FAT\n");
+    }
     
     terminal_set_fg_color_palette(10);
     printk("\nDone\n\n");
@@ -90,6 +111,8 @@ void _start(boot_info_t *boot_info) {
     printk("\n");
 
     ioapic_set_entry(ioapic_remap_irq(1), 0x21);
+
+    printk("%lx\n", _start);
 
     while (1);
 }

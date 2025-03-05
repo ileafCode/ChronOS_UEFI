@@ -1,5 +1,7 @@
 #include <logging/logging.h>
 
+char log_buf[1024];
+
 void log_info(char *module, char *fmt, ...) {
 #if LOG_LEVEL == LOG_LEVEL_INFO
     terminal_putc('[');
@@ -10,8 +12,11 @@ void log_info(char *module, char *fmt, ...) {
 
     va_list args;
     va_start(args, fmt);
-    vprintk(fmt, args);
-    va_end(args);
+	vsprintf(log_buf, fmt, args);
+	va_end(args);
+
+    terminal_puts(log_buf);
+
     terminal_putc('\n');
 #endif
 }
@@ -26,8 +31,10 @@ void log_ok(char *module, char *fmt, ...) {
 
     va_list args;
     va_start(args, fmt);
-    vprintk(fmt, args);
-    va_end(args);
+	vsprintf(log_buf, fmt, args);
+	va_end(args);
+
+    terminal_puts(log_buf);
 
     terminal_putc('\n');
 #endif
@@ -43,8 +50,10 @@ void log_warn(char *module, char *fmt, ...) {
 
     va_list args;
     va_start(args, fmt);
-    vprintk(fmt, args);
-    va_end(args);
+	vsprintf(log_buf, fmt, args);
+	va_end(args);
+
+    terminal_puts(log_buf);
 
     terminal_putc('\n');
 #endif
@@ -60,8 +69,10 @@ void log_error(char *module, char *fmt, ...) {
 
     va_list args;
     va_start(args, fmt);
-    vprintk(fmt, args);
-    va_end(args);
+	vsprintf(log_buf, fmt, args);
+	va_end(args);
+
+    terminal_puts(log_buf);
 
     terminal_putc('\n');
 #endif

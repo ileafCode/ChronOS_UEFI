@@ -16,11 +16,11 @@ void arp_handle(ethernet_dev_t *device, arp_packet_t *data) {
             log_info("ARP", "Got ARP_REQUEST. Sending data...");
             memcpy(data->src_hardware_addr, device->mac, 6);
         
-            // Set IP to 192.168.8.183
+            // Set IP to 192.168.1.100
             data->src_protocol_addr[0] = 192;
             data->src_protocol_addr[1] = 168;
-            data->src_protocol_addr[2] = 8;
-            data->src_protocol_addr[3] = 183;
+            data->src_protocol_addr[2] = 1;
+            data->src_protocol_addr[3] = 100;
 
             memcpy(data->dst_hardware_addr, dest_hw_address, 6);
             memcpy(data->dst_protocol_addr, dest_protocol_address, 4);

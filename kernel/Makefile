@@ -8,7 +8,7 @@ CC = x86_64-elf-gcc
 ASMC = nasm
 LD = x86_64-elf-ld
 
-CFLAGS = -ffreestanding -I include -O1 -msse2
+CFLAGS = -ffreestanding -I include -O1 -mno-sse -mno-sse2 -mno-avx -mno-avx2 -mno-mmx
 LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib
 
 SRCDIR := src
@@ -54,6 +54,7 @@ buildimg:
 	mcopy -i $(BUILDDIR)/$(OSNAME).img startup.nsh ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/kernel.elf ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/font.psf ::
+	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/functions.txt ::
 
 run:
 	sudo qemu-system-x86_64 -drive file=$(BUILDDIR)/$(OSNAME).img \
@@ -62,7 +63,7 @@ run:
 	-device edu \
 	-device e1000,netdev=net0 \
 	-device AC97,audiodev=coreaudiodev \
-	-m 1G -cpu qemu64 -machine q35 \
+	-m 2G -cpu qemu64 -machine q35 \
 	-drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/ovmf_code.fd",readonly=on \
 	-drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/ovmf_vars.fd",readonly=on \
 	-monitor stdio

@@ -188,6 +188,9 @@ typedef struct {
     uint8_t portNumber;
 } ahci_port_t;
 
+int dev_ahci_read(ahci_port_t *port, uint64_t sector, uint32_t sectorCount);
+int dev_ahci_write(ahci_port_t *port, uint64_t sector, uint32_t sectorCount);
+ahci_port_t *dev_ahci_get_port(int idx);
 void dev_ahci_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_t cur_func);
 
 #endif

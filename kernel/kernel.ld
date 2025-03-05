@@ -3,21 +3,23 @@ ENTRY(_start)
 
 SECTIONS
 {
-	.text :
+	_kern_start = .;
+	.text 0x100000 :
 	{
 		*(.text)
 	}
-	.data : 
+	.data 0x300000 :
 	{
 		*(.data)
 	}
-	.rodata : 
+	.rodata 0x500000 :
 	{
 		*(.rodata)
 	}
-	.bss : 
+	.bss 0x700000 :
 	{
 		*(COMMON)
 		*(.bss)
 	}
+	_kern_end = .;
 }
