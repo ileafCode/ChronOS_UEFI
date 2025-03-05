@@ -19,8 +19,6 @@
 #include <timers/hpet/hpet.h>
 #include <net/net.h>
 #include <fs/fat/ff.h>
-#include <fs/vfs.h>
-#include <fs/fat/fat_wrapper.h>
 #include <lai/helpers/pm.h>
 
 extern void enable_sce();
@@ -89,12 +87,6 @@ void _start(boot_info_t *boot_info) {
     pci_init();
 
     enable_sce();
-
-    vfs_init();
-
-    if (fat_mount("fat1")) {
-        printk("Failed to mount FAT\n");
-    }
     
     terminal_set_fg_color_palette(10);
     printk("\nDone\n\n");

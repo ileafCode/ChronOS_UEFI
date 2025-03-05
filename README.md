@@ -38,8 +38,6 @@ ChronOS64 is the 64-bit version of ChronOS.
 
 ### Filesystems
 - [x] FAT
-- [ ] ext2 (maybe)
-- [x] VFS (sort of)
 
 ### Network protocols
 - [x] ARP
