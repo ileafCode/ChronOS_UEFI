@@ -20,7 +20,7 @@ void heap_init() {
     memset(heap, 0, sizeof(heap_t));
 
     region = pmm_getpage();
-    for (int i = 1; i < 0x100; i++) {
+    for (int i = 1; i < 0x200; i++) {
         pmm_getpage();
     }
     memset(region, 0, HEAP_INIT_SIZE);

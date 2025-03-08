@@ -3,20 +3,21 @@ ENTRY(_start)
 
 SECTIONS
 {
+	. = 0x100000;
 	_kern_start = .;
-	.text 0x100000 :
+	.text : ALIGN(0x1000)
 	{
 		*(.text)
 	}
-	.data 0x300000 :
+	.data : ALIGN(0x1000)
 	{
 		*(.data)
 	}
-	.rodata 0x500000 :
+	.rodata : ALIGN(0x1000)
 	{
 		*(.rodata)
 	}
-	.bss 0x700000 :
+	.bss : ALIGN(0x1000)
 	{
 		*(COMMON)
 		*(.bss)

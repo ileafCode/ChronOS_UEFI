@@ -117,8 +117,8 @@ void acpi_init(boot_info_t *boot_info) {
         while (1);
     }
 
-    idt_set_gate(sci_irq, 0x80, IDT_TA_InterruptGate, 0x08);
-    ioapic_set_entry(ioapic_remap_irq(fadt->sci_irq), 0x80);
+    idt_set_gate(sci_irq, 0x40, IDT_TA_InterruptGate, 0x08);
+    ioapic_set_entry(ioapic_remap_irq(fadt->sci_irq), 0x40);
 
     lai_set_acpi_revision(rsdp->revision);
     lai_create_namespace();

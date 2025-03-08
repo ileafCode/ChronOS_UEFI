@@ -34,7 +34,8 @@ ChronOS64 is the 64-bit version of ChronOS.
 - [ ] AC97 (maybe)
 
 ### Multitasking
-- [ ] Scheduling
+- [x] Scheduling
+- [x] Syscalls (just one test syscall currently)
 
 ### Filesystems
 - [x] FAT
@@ -56,3 +57,6 @@ ChronOS64 is the 64-bit version of ChronOS.
 - LAI (Lightweight AML interpreter) https://github.com/managarm/lai/tree/master
 - SHMALL (Simple Heap Memory ALLocator) https://github.com/CCareaga/heap_allocator
 - FatFs - Generic FAT Filesystem Module http://elm-chan.org/fsw/ff/
+
+## Notes
+The minumum amount of RAM it can handle right now is 48 MB (tested in QEMU). I doubt anyone would have that much RAM, as this is a UEFI OS.

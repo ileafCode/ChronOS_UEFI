@@ -2,6 +2,7 @@
 #include <printk/printk.h>
 
 void stacktrace_print() {
+    return;
     stackframe_t *stk;
     asm volatile ("movq %%rbp,%0" : "=r"(stk) ::);
     printk(" --- Stack trace ---\n");

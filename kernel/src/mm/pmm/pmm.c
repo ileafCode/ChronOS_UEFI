@@ -15,11 +15,8 @@ uint64_t bitmap_size = 0;
 
 volatile void *start_of_mem = NULL;
 
-mem_block_t *mem_blocks = (mem_block_t*)0x1F000;
-int num_mem_blocks = 0;
-
-extern uint64_t _kern_start;
-extern uint64_t _kern_end;
+extern char _kern_start[];
+extern char _kern_end[];
 
 uint8_t bitmap_get(uint32_t idx) {
     if (idx > bitmap_size * 8)
@@ -68,19 +65,11 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
     for (int i = 0; i < mMapEntries; i++) {
         EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)((uint64_t)mmap + (i * mmap_descsize));
         if (desc->type == 7) { // type = EfiConventionalMemory
-            mem_block_t blk = { 
-                (void *)desc->physAddr,
-                desc->numPages * 4096
-            };
-            mem_blocks[num_mem_blocks++] = blk;
-        }
-    }
-
-    for (int i = 0; i < num_mem_blocks; i++) {
-        if (mem_blocks[i].size * 4096 > largestFreeMemSegSize) {
-            largestFreeMemSeg = (void *)((uint64_t)(mem_blocks[i].address) + 0x4000);
-            largestFreeMemSegSize = (mem_blocks[i].size * 0x1000) - 0x4000;
-            bitmap = (uint8_t *)((uint64_t)(largestFreeMemSeg) - 0x4000);
+            if (desc->numPages * 0x1000 > largestFreeMemSegSize) {
+                largestFreeMemSeg = (void *)((uint64_t)(desc->physAddr) + 0x4000);
+                largestFreeMemSegSize = (desc->numPages * 0x1000) - 0x4000;
+                bitmap = (uint8_t *)((uint64_t)(largestFreeMemSeg) - 0x4000);
+            }
         }
     }
 
@@ -94,6 +83,8 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
     log_info("PMM", "Got memory and bitmap size");
 
     log_ok("PMM", "PMM initialized");
+
+    printk("%lx, %x\n", start_of_mem, _kern_start);
 
     if ((uint64_t)start_of_mem < _kern_start) {
         uint64_t kernel_size = _kern_end - _kern_start;

@@ -39,6 +39,10 @@ void pmidx_init(page_map_idx_t *pmidx, uint64_t virtual) {
 
 page_table_t *pml4;
 
+page_table_t *paging_get_pml4() {
+    return pml4;
+}
+
 void paging_change_dir(page_table_t *dir) {
     pml4 = dir;
     asm volatile ("mov %0, %%cr3" : : "r" (dir));
@@ -181,10 +185,13 @@ void paging_unmap(void *virtual) {
     asm volatile ("invlpg (%0)" : : "b"(virtual) : "memory");
 }
 
+extern char _kern_start[];
+extern char _kern_end[];
+
 void paging_init(boot_info_t *boot_info) {
     pml4 = pmm_getpage();
     memset(pml4, 0, 0x1000);
-    log_info("PAGE", "Initialized base PML4 page");
+    log_info("PAGE", "Initialized kernel PML4 page");
 
     uint64_t mMapEntries = boot_info->mMapSize / boot_info->mMapDescSize;
 

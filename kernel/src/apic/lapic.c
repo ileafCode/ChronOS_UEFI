@@ -21,6 +21,10 @@ uint32_t get_lapic_addr() {
     return (uint32_t)((uint64_t)lapic_address);
 }
 
+void lapic_eoi() {
+    write_lapic_register(LAPIC_EOI, 0);
+}
+
 void lapic_init() {
     madt_t *madt = (madt_t *)acpi_find_table("APIC");
     if (!madt) {

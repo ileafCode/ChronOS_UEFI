@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define HEAP_INIT_SIZE 0x100000
-#define HEAP_MAX_SIZE 0x100000
+#define HEAP_INIT_SIZE 0x200000
+#define HEAP_MAX_SIZE 0x200000
 #define HEAP_MIN_SIZE 0x1000
 
 #define MIN_ALLOC_SZ 4

@@ -4,13 +4,10 @@
 #include <printk/printk.h>
 #include <io/io.h>
 #include <utils/panic.h>
-
-typedef struct int_reg_return {
-    uint64_t r15, r14, r13, r12;
-    uint64_t r11, r10,  r9,  r8;
-    uint64_t rdi, rsi, rbp, rbx;
-    uint64_t rdx, rcx, rax;
-} __attribute__((packed)) int_reg_return_t;
+#include <utils/regs.h>
+#include <process/process.h>
+#include <apic/lapic.h>
+#include <idt/syscall.h>
 
 const char *exception_messages[32] = {
     "Division By Zero",                  // 0
@@ -82,7 +79,7 @@ const char *exception_verses[32] = {
     ""                        // 31: Reserved (31)
 };
 
-void print_regs(int_reg_return_t *regs) {
+void print_regs(regs_err_t *regs) {
     printk(" --- Registers --- \n");
     printk("    RAX: %16lx, RCX: %16lx, RDX: %16lx, RBX: %16lx\n",
         regs->rax, regs->rcx, regs->rdx, regs->rbx);
@@ -92,9 +89,10 @@ void print_regs(int_reg_return_t *regs) {
         regs->r8,  regs->r9,  regs->r10, regs->r11);
     printk("    R12: %16lx, R13: %16lx, R14: %16lx, R15: %16lx\n",
         regs->r12,  regs->r13,  regs->r14, regs->r15);
+    printk("    RIP: %16lx, ERR: %x\n", regs->rip, regs->erc);
 }
 
-void exception_handler(int_reg_return_t *regs, uint64_t exception) {
+void exception_handler(regs_err_t *regs, uint64_t exception) {
     kernel_panic(exception_messages[exception]);
     print_regs(regs);
     stacktrace_print();
@@ -105,10 +103,15 @@ void exception_handler(int_reg_return_t *regs, uint64_t exception) {
 
 void kbd_ps2_handler() {
     uint8_t sc = inb(0x60);
-    printk("%x\n", sc);
+    //printk("%x\n", sc);
 }
 
-void timer_handler() {
+void timer_handler(regs_t *regs) {
+    schedule(regs);
+}
+
+void syscall_handler(regs_t *regs) {
+    syscall(regs);
 }
 
 extern void exception0();
@@ -147,6 +150,8 @@ extern void exception31();
 extern void timer_irq();
 extern void kbd_ps2_irq();
 
+extern void syscall_req();
+
 void int_handlers_init() {
     void (*exceptions[32])() = {
         exception0, exception1, exception2, exception3,
@@ -165,4 +170,5 @@ void int_handlers_init() {
 
     idt_set_gate(timer_irq, 0x20, IDT_TA_InterruptGate, 0x08);
     idt_set_gate(kbd_ps2_irq, 0x21, IDT_TA_InterruptGate, 0x08);
+    idt_set_gate(syscall_req, 0x80, IDT_TA_InterruptGate, 0x08);
 }

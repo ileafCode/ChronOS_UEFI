@@ -48,6 +48,7 @@
 
 int get_lapic_id();
 uint32_t get_lapic_addr();
+void lapic_eoi();
 void lapic_init();
 
 #endif

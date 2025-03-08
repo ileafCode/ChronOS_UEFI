@@ -1,5 +1,7 @@
 #include <terminal/terminal.h>
 #include <string/string.h>
+#include <io/io.h>
+#include <process/process.h>
 
 gop_framebuffer_t *framebuffer;
 psf1_font_t *psf1_font;
@@ -67,6 +69,8 @@ void terminal_scroll() {
 }
 
 void terminal_putc(unsigned char chr) {
+    outb(0xe9, chr);
+    return;
     if (chr == '\n') {
         cursor_x = 0;
         cursor_y += char_height;

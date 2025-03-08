@@ -1,6 +1,7 @@
 [bits 64]
 
 %macro pushaq 0
+    push rsp
     push rax
     push rcx
     push rdx
@@ -34,9 +35,11 @@
     pop rdx
     pop rcx
     pop rax
+    add rsp, 8
 %endmacro
 
 %macro int_stub 2
+    cli
     pushaq
 
     mov rdi, rsp
@@ -44,13 +47,16 @@
     call %1
 
     popaq
+    sti
     iretq
 %endmacro
 
 EXTERN lapic_address
 
 %macro irq_stub 1
+    cli
     pushaq
+    mov rdi, rsp
     call %1
     popaq
 
@@ -59,48 +65,71 @@ EXTERN lapic_address
     add rax, 0xB0
     mov dword [rax], 0
     pop rax
-
-    iretq
+    sti
 %endmacro
+
+; Syscall
+EXTERN syscall_handler
+syscall_req:
+    cli
+    pushaq
+
+    mov rdi, rsp
+    call syscall_handler
+
+    popaq
+    sti
+    iretq
+GLOBAL syscall_req
 
 ; IRQs
 EXTERN timer_handler
 timer_irq:
     irq_stub timer_handler
+    iretq
 GLOBAL timer_irq
 
 EXTERN sci_handler
 sci_irq:
     irq_stub sci_handler
+    iretq
 GLOBAL sci_irq
 
 EXTERN kbd_ps2_handler
 kbd_ps2_irq:
     irq_stub kbd_ps2_handler
+    iretq
 GLOBAL kbd_ps2_irq
 
 EXTERN edu_irq_handler
 edu_irq:
     irq_stub edu_irq_handler
+    iretq
 GLOBAL edu_irq
 
 EXTERN e1000_irq_handler
 e1000_irq:
     irq_stub e1000_irq_handler
+    iretq
 GLOBAL e1000_irq
 
 EXTERN ahci_irq_handler
 ahci_irq:
     irq_stub ahci_irq_handler
+    iretq
 GLOBAL ahci_irq
 
 ; Exceptions
 EXTERN exception_handler
 
 %macro DEFINE_EXCEPTION 1
-    exception%1:
-        int_stub exception_handler, %1
-    GLOBAL exception%1
+exception%1:
+    %if %1 != 8 && %1 != 10 && %1 != 11 && %1 != 12 && %1 != 13 && %1 != 14 && %1 != 17
+        push $0
+    %endif
+    int_stub exception_handler, %1
+    iretq
+GLOBAL exception%1
 %endmacro
 
 %assign i 0
@@ -108,3 +137,4 @@ EXTERN exception_handler
     DEFINE_EXCEPTION i
     %assign i i+1
 %endrep
+

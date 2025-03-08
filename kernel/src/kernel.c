@@ -20,6 +20,8 @@
 #include <net/net.h>
 #include <fs/fat/ff.h>
 #include <lai/helpers/pm.h>
+#include <process/process.h>
+#include <io/io.h>
 
 extern void enable_sce();
 extern void enable_optimizations();
@@ -86,6 +88,8 @@ void _start(boot_info_t *boot_info) {
     net_init();
     pci_init();
 
+    process_init();
+
     enable_sce();
     
     terminal_set_fg_color_palette(10);
@@ -104,7 +108,10 @@ void _start(boot_info_t *boot_info) {
 
     ioapic_set_entry(ioapic_remap_irq(1), 0x21);
 
-    printk("%lx\n", _start);
+    int i = 0;
 
-    while (1);
+    while (1) {
+        //outb(0xE9, 'K');
+        printk("Kernel: %d\n", i++);
+    }
 }

@@ -8,8 +8,8 @@ CC = x86_64-elf-gcc
 ASMC = nasm
 LD = x86_64-elf-ld
 
-CFLAGS = -ffreestanding -I include -O1 -mno-sse -mno-sse2 -mno-avx -mno-avx2 -mno-mmx
-LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib
+CFLAGS = -ffreestanding -I include -O0 -msse -msse2 -mno-mmx -mno-red-zone
+LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib -z max-page-size=0x1000
 
 SRCDIR := src
 OBJDIR := lib
@@ -63,7 +63,7 @@ run:
 	-device edu \
 	-device e1000,netdev=net0 \
 	-device AC97,audiodev=coreaudiodev \
-	-m 2G -cpu qemu64 -machine q35 \
+	-m 512M -cpu qemu64 -machine q35 \
 	-drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/ovmf_code.fd",readonly=on \
 	-drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/ovmf_vars.fd",readonly=on \
-	-monitor stdio
+	-debugcon stdio

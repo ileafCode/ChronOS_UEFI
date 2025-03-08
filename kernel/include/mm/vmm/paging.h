@@ -60,6 +60,10 @@ void pmidx_init(page_map_idx_t *pmidx, uint64_t virtual);
 /// @param dir PML4 directory
 void paging_change_dir(page_table_t *dir);
 
+/// @brief Gets current PML4 directory
+/// @return PML4 dir
+page_table_t *paging_get_pml4();
+
 /// @brief Maps a virtual address to a physical address
 /// @param virtual The virtual address
 /// @param physical The physical address
