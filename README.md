@@ -40,6 +40,10 @@ ChronOS64 is the 64-bit version of ChronOS.
 ### Filesystems
 - [x] FAT
 
+### Executable types
+- [x] ELF
+- [ ] PE (maybe)
+
 ### Network protocols
 - [x] ARP
 - [ ] ICMP
