@@ -2,6 +2,7 @@
 #include <logging/logging.h>
 #include <mm/vmm/paging.h>
 #include <idt/idt.h>
+#include <process/process.h>
 
 volatile void *edu_memory;
 
@@ -61,7 +62,7 @@ void dev_edu_init(pci_hdr0_t *hdr) {
     paging_map(
         (void *)((uint64_t)hdr->bar0 & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)hdr->bar0 & 0xFFFFFFFFFFFFF000),
-        NULL
+        PAGE_NORMAL
     );
 
     edu_memory = (volatile uint32_t *)((uint64_t)hdr->bar0);

@@ -67,7 +67,7 @@ void enum_function(uint64_t deviceAddress, uint64_t function) {
     paging_map(
         (void *)((uint64_t)functionAddress & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)functionAddress & 0xFFFFFFFFFFFFF000),
-        NULL
+        PAGE_NORMAL
     );
 
     current_func = function;
@@ -126,7 +126,7 @@ void enum_dev(uint64_t busAddress, uint32_t device) {
     paging_map(
         (void *)((uint64_t)deviceAddress & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)deviceAddress & 0xFFFFFFFFFFFFF000),
-        NULL
+        PAGE_NORMAL
     );
 
     current_device = (uint64_t)device;
@@ -149,7 +149,7 @@ void enum_bus(uint64_t baseAddress, uint32_t bus) {
     paging_map(
         (void *)((uint64_t)busAddress & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)busAddress & 0xFFFFFFFFFFFFF000),
-        NULL
+        PAGE_NORMAL
     );
 
     current_bus = (uint64_t)bus;

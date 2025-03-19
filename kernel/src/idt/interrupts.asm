@@ -38,14 +38,19 @@
     add rsp, 8
 %endmacro
 
+EXTERN process_set_pml4_to_kernel
+EXTERN process_set_pml4_to_cur_proc
+
 %macro int_stub 2
     cli
     pushaq
+    call process_set_pml4_to_kernel
 
     mov rdi, rsp
     mov rsi, %2
     call %1
 
+    call process_set_pml4_to_cur_proc
     popaq
     sti
     iretq
@@ -56,15 +61,20 @@ EXTERN lapic_address
 %macro irq_stub 1
     cli
     pushaq
+    call process_set_pml4_to_kernel
     mov rdi, rsp
     call %1
-    popaq
+    
+    call process_set_pml4_to_kernel
 
     push rax
     mov rax, [lapic_address]
     add rax, 0xB0
     mov dword [rax], 0
     pop rax
+
+    call process_set_pml4_to_cur_proc
+    popaq
     sti
 %endmacro
 
@@ -73,10 +83,12 @@ EXTERN syscall_handler
 syscall_req:
     cli
     pushaq
+    call process_set_pml4_to_kernel
 
     mov rdi, rsp
     call syscall_handler
 
+    call process_set_pml4_to_cur_proc
     popaq
     sti
     iretq
@@ -128,7 +140,6 @@ exception%1:
         push $0
     %endif
     int_stub exception_handler, %1
-    iretq
 GLOBAL exception%1
 %endmacro
 

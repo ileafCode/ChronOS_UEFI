@@ -43,7 +43,7 @@ void *laihost_map(size_t addr, size_t count) {
         paging_map(
             (void *)((uint64_t)(addr + (i * 0x1000)) & 0xFFFFFFFFFFFFF000),
             (void *)((uint64_t)(addr + (i * 0x1000)) & 0xFFFFFFFFFFFFF000),
-            NULL
+            PAGE_NORMAL
         );
     }
 }

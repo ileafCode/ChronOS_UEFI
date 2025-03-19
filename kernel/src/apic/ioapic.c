@@ -75,7 +75,7 @@ void ioapic_init() {
     paging_map(
         (void *)((uint64_t)ioapic_address & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)ioapic_address & 0xFFFFFFFFFFFFF000),
-        (enum ptflag[]){ CacheDisabled, End }
+        PAGE_NORMAL
     );
 
     uint32_t ioapic_reg1 = read_ioapic_register(0x01);

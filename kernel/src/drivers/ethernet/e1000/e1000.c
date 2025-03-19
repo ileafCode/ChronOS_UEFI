@@ -7,6 +7,7 @@
 #include <io/io.h>
 #include <lai/helpers/pci.h>
 #include <net/net.h>
+#include <process/process.h>
 
 uint16_t e1000_io_base;
 uint64_t e1000_mem_base;
@@ -248,7 +249,7 @@ void dev_e1000_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_
             paging_map(
                 (void *)((uint64_t)(e1000_mem_base + (i * 0x1000)) & 0xFFFFFFFFFFFFF000),
                 (void *)((uint64_t)(e1000_mem_base + (i * 0x1000)) & 0xFFFFFFFFFFFFF000),
-                (enum ptflag[]){ CacheDisabled, End }
+                PAGE_NORMAL | PAGE_CACHE_DISABLED
             );
         }
     } else { // Port IO

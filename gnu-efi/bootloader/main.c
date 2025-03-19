@@ -179,7 +179,6 @@ int strncmp(const char *s1, const char *s2, register int n) {
 
 EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	InitializeLib(ImageHandle, SystemTable);
-	Print(L"String blah blah blah \n\r");
 
 	EFI_FILE* Kernel = LoadFile(NULL, L"kernel.elf", ImageHandle, SystemTable);
 	if (Kernel == NULL){
@@ -266,12 +265,29 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	// Get the mempry map
 	EFI_MEMORY_DESCRIPTOR *Map = NULL;
-	UINTN MapSize, MapKey;
+	UINTN MapSize = 0, MapKey = 0;
 	UINTN DescriptorSize;
 	UINT32 DescriptorVersion;
-	SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
-	SystemTable->BootServices->AllocatePool(EfiLoaderData, MapSize, (void **)&Map);
-	SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+	EFI_STATUS status = SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+	if (status != EFI_BUFFER_TOO_SMALL) {
+	    Print(L"Unexpected error when getting memory map size: %r\n", status);
+	    while(1);
+	}
+
+	// Allocate a buffer that's a bit larger in case the map grows between calls.
+	MapSize += DescriptorSize * 2;
+	status = SystemTable->BootServices->AllocatePool(EfiLoaderData, MapSize, (void **)&Map);
+	if (EFI_ERROR(status)) {
+	    Print(L"Failed to allocate memory for the map: %r\n", status);
+	    while(1);
+	}
+
+	// Get the memory map again with a proper buffer.
+	status = SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+	if (EFI_ERROR(status)) {
+	    Print(L"Failed to retrieve memory map: %r\n", status);
+	    while(1);
+	}
 
 	EFI_CONFIGURATION_TABLE *configTable = SystemTable->ConfigurationTable;
 	void *rsdp = NULL;
@@ -291,6 +307,13 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	    }
 	}
 
+	SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+	EFI_STATUS bs = SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
+	if (bs != EFI_SUCCESS) {
+		Print(L"Failed to exit boot services: %x", bs);
+		while (1);
+	}
+
 	boot_info_t boot_info;
 	boot_info.framebuffer = &framebuffer;
 	boot_info.mMap = Map;
@@ -298,8 +321,6 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	boot_info.mMapDescSize = DescriptorSize;
 	boot_info.psf1_Font = newFont;
 	boot_info.rsdp = (UINT64)rsdp;
-
-	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
 
 	__asm__ ("xorq %rbp, %rbp");
 	KernelStart(&boot_info);

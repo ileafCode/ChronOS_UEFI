@@ -96,6 +96,11 @@ void exception_handler(regs_err_t *regs, uint64_t exception) {
     kernel_panic(exception_messages[exception]);
     print_regs(regs);
     stacktrace_print();
+    if (exception == 14) { // Page fault
+        uint64_t cr2;
+        asm volatile ("mov %%cr2, %0" : "=r" (cr2));
+        printk("page fault: Failed address: %lx", cr2);
+    }
     printk("\n%s\n", exception_verses[exception]);
     
     while (1);

@@ -7,6 +7,7 @@
 #include <shmall_wrapper.h>
 #include <mm/pmm/pmm.h>
 #include <timers/hpet/hpet.h>
+#include <process/process.h>
 
 extern void ahci_irq();
 
@@ -88,7 +89,7 @@ void dev_ahci_port_configure(ahci_port_t *port) {
     paging_map(
         (void *)((uint64_t)(newBase) & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)(newBase) & 0xFFFFFFFFFFFFF000),
-        (enum ptflag[]){ CacheDisabled, WriteThrough, End }
+        PAGE_NORMAL | PAGE_CACHE_DISABLED | PAGE_WRITE_THROUGH
     );
     port->hbaPort->commandListBase = (uint32_t)((uint64_t)newBase);
     dev_ahci_flush_writes(port);
@@ -100,7 +101,7 @@ void dev_ahci_port_configure(ahci_port_t *port) {
     paging_map(
         (void *)((uint64_t)(fisBase) & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)(fisBase) & 0xFFFFFFFFFFFFF000),
-        (enum ptflag[]){ CacheDisabled, WriteThrough, End }
+        PAGE_NORMAL | PAGE_CACHE_DISABLED | PAGE_WRITE_THROUGH
     );
     port->hbaPort->fisBaseAddress = (uint32_t)((uint64_t)fisBase);
     dev_ahci_flush_writes(port);
@@ -117,7 +118,7 @@ void dev_ahci_port_configure(ahci_port_t *port) {
         paging_map(
             (void *)((uint64_t)(cmdTableAddress) & 0xFFFFFFFFFFFFF000),
             (void *)((uint64_t)(cmdTableAddress) & 0xFFFFFFFFFFFFF000),
-            (enum ptflag[]){ CacheDisabled, WriteThrough, End }
+            PAGE_NORMAL | PAGE_CACHE_DISABLED | PAGE_WRITE_THROUGH
         );
         uint64_t address = (uint64_t)cmdTableAddress + (i << 8);
         cmdHeader[i].commandTableBaseAddress = (uint32_t)(uint64_t)address;
@@ -326,7 +327,7 @@ void dev_ahci_init(pci_hdr0_t *hdr, uint64_t cur_bus, uint64_t cur_dev, uint64_t
     paging_map(
         (void *)((uint64_t)(hdr->bar5 & ~3) & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)(hdr->bar5 & ~3) & 0xFFFFFFFFFFFFF000),
-        (enum ptflag[]){ CacheDisabled, WriteThrough, End }
+        PAGE_NORMAL | PAGE_CACHE_DISABLED | PAGE_WRITE_THROUGH
     );
 
     // Perform BIOS/OS handoff

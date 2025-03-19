@@ -3,24 +3,24 @@ ENTRY(_start)
 
 SECTIONS
 {
-	. = 0x100000;
+	. = 0x10000;
 	_kern_start = .;
-	.text : ALIGN(0x1000)
-	{
-		*(.text)
-	}
-	.data : ALIGN(0x1000)
-	{
-		*(.data)
-	}
-	.rodata : ALIGN(0x1000)
-	{
-		*(.rodata)
-	}
-	.bss : ALIGN(0x1000)
-	{
-		*(COMMON)
-		*(.bss)
-	}
+
+  	__kernel_code_start = .;
+  	.text : AT(ADDR(.text)) {
+  	  *(.text)
+  	}
+  	.rodata ALIGN(4K) : AT(ADDR(.rodata)) {
+  	  *(.rodata)
+  	}
+  	. = ALIGN(4K);
+
+  	.data : AT(ADDR(.data)) {
+  	  *(.data)
+  	}
+  	.bss ALIGN(4K) : AT(ADDR(.bss)) {
+  	  *(.bss)
+  	}
+  	. = ALIGN(4K);
 	_kern_end = .;
 }

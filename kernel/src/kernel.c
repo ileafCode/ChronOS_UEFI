@@ -22,6 +22,7 @@
 #include <lai/helpers/pm.h>
 #include <process/process.h>
 #include <io/io.h>
+#include <loader/elf.h>
 
 extern void enable_sce();
 extern void enable_optimizations();
@@ -55,6 +56,8 @@ FRESULT list_dir(const char *path)
     return res;
 }
 
+FATFS ffs;
+
 __attribute__((force_align_arg_pointer))
 void _start(boot_info_t *boot_info) {
     enable_optimizations();
@@ -62,11 +65,11 @@ void _start(boot_info_t *boot_info) {
     terminal_init(boot_info->framebuffer, boot_info->psf1_Font);
     terminal_clear();
 
-    gdt_init();
-    idt_init();
-
     pmm_init(boot_info->mMap, boot_info->mMapSize, boot_info->mMapDescSize);
     paging_init(boot_info);
+
+    gdt_init();
+    idt_init();
 
     if (boot_info->rsdp == 0) { // Fatal error
         kernel_panic("No RSDP/XSDP found.");
@@ -83,10 +86,16 @@ void _start(boot_info_t *boot_info) {
 
     hpet_init();
 
-    lai_enable_acpi(1);
+    //lai_enable_acpi(1);
 
     net_init();
     pci_init();
+
+    FRESULT res = f_mount(&ffs, "", 0);
+    if (res) {
+        printk("Failed to mount (%d)\n", res);
+        while (1);
+    }
 
     process_init();
 
@@ -108,10 +117,33 @@ void _start(boot_info_t *boot_info) {
 
     ioapic_set_entry(ioapic_remap_irq(1), 0x21);
 
-    int i = 0;
+    FIL file;
+    int file_sz, br;
+    char *buffer;
+    res = f_open(&file, "/test", FA_READ | FA_WRITE);
+    if (res) {
+        printk("Failed to open /test (%d)\n", res);
+        while (1);
+    }
+
+    file_sz = f_size(&file);
+    buffer = (char *)kmalloc(file_sz);
+
+    res = f_read(&file, (void *)buffer, file_sz, &br);
+    if (res) {
+        printk("Failed to read /test (%d)\n", res);
+        while (1);
+    }
+
+    res = f_close(&file);
+    if (res) {
+        printk("Failed to close /test (%d)\n", res);
+        while (1);
+    }
+
+    make_proc_from_elf(buffer);
+    //load_elf(buffer, paging_get_pml4());
 
     while (1) {
-        //outb(0xE9, 'K');
-        printk("Kernel: %d\n", i++);
     }
 }

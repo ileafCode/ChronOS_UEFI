@@ -39,7 +39,7 @@ int hpet_init() {
     paging_map(
         (void *)((uint64_t)hpet_table->base_address.address & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)hpet_table->base_address.address & 0xFFFFFFFFFFFFF000),
-        (enum ptflag[]){ CacheDisabled, End }
+        PAGE_NORMAL | PAGE_CACHE_DISABLED
     );
     log_info("HPET", "Mapped HPET address to virtual memory");
 

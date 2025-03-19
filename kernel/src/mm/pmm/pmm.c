@@ -43,6 +43,7 @@ uint8_t bitmap_set(uint32_t idx, uint8_t value) {
 
 uint64_t get_mem_size(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_entries, uint64_t mmap_descsize) {
     static uint64_t memorySizeBytes = 0;
+    //printk("%lx\n", memorySizeBytes);
     if (memorySizeBytes > 0)
         return memorySizeBytes;
 
@@ -56,11 +57,30 @@ uint64_t get_mem_size(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_entries, uint64
 
 void pmm_lockpages(void *addr, int pages);
 
+const char *EFI_MEMORY_TYPE_STRINGS[] =  {
+    "EfiReservedMemoryType",
+    "EfiLoaderCode",
+    "EfiLoaderData",
+    "EfiBootServicesCode",
+    "EfiBootServicesData",
+    "EfiRuntimeServicesCode",
+    "EfiRuntimeServicesData",
+    "EfiConventionalMemory",
+    "EfiUnusableMemory",
+    "EfiACPIReclaimMemory",
+    "EfiACPIMemoryNVS",
+    "EfiMemoryMappedIO",
+    "EfiMemoryMappedIOPortSpace",
+    "EfiPalCode",
+};
+
 void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_descsize) {
     uint64_t mMapEntries = mmap_size / mmap_descsize;
 
     void *largestFreeMemSeg = NULL;
     uint64_t largestFreeMemSegSize = 0;
+
+    //uint64_t test = 0;
 
     for (int i = 0; i < mMapEntries; i++) {
         EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR *)((uint64_t)mmap + (i * mmap_descsize));
@@ -71,7 +91,15 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
                 bitmap = (uint8_t *)((uint64_t)(largestFreeMemSeg) - 0x4000);
             }
         }
+        if (desc->type == EfiConventionalMemory) {
+            //test += 0x1000 * desc->numPages;
+            //printk("Type: %27s, Address: %lx, Size: %x;\n", EFI_MEMORY_TYPE_STRINGS[desc->type], desc->physAddr, desc->numPages * 0x1000);
+        }
+
+        //
     }
+    //printk("%lx\n", test);
+    //while(1);
 
     memset(bitmap, 0, 0x4000);
 
@@ -84,7 +112,7 @@ void pmm_init(EFI_MEMORY_DESCRIPTOR *mmap, uint64_t mmap_size, uint64_t mmap_des
 
     log_ok("PMM", "PMM initialized");
 
-    printk("%lx, %x\n", start_of_mem, _kern_start);
+    //printk("%lx, %x\n", start_of_mem, _kern_start);
 
     if ((uint64_t)start_of_mem < _kern_start) {
         uint64_t kernel_size = _kern_end - _kern_start;
@@ -103,6 +131,19 @@ void *pmm_getpage() {
 
     void *pageaddr = (void *)((uint64_t)(start_of_mem) + (0x1000 * idx));
     //printk("%lx\n", pageaddr);
+    return pageaddr;
+}
+
+void *pmm_getpages(int pages) {
+    int idx = 0;
+    while (bitmap_get(idx) != 0) {
+        idx++;
+    }
+    for (int i = 0; i < pages; i++) {
+        bitmap_set(idx + i, 1);
+    }
+
+    void *pageaddr = (void *)((uint64_t)(start_of_mem) + (0x1000 * (idx)));
     return pageaddr;
 }
 

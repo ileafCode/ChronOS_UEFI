@@ -37,7 +37,7 @@ void lapic_init() {
     paging_map(
         (void *)((uint64_t)lapic_address & 0xFFFFFFFFFFFFF000),
         (void *)((uint64_t)lapic_address & 0xFFFFFFFFFFFFF000),
-        (enum ptflag[]){ CacheDisabled, End }
+        PAGE_NORMAL | PAGE_CACHE_DISABLED
     );
 
     write_msr(LAPIC_MSR, (read_msr(LAPIC_MSR) | 0x800) & ~(1 << 10));

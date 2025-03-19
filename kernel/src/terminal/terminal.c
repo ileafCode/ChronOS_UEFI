@@ -69,8 +69,6 @@ void terminal_scroll() {
 }
 
 void terminal_putc(unsigned char chr) {
-    outb(0xe9, chr);
-    return;
     if (chr == '\n') {
         cursor_x = 0;
         cursor_y += char_height;
@@ -103,6 +101,7 @@ void terminal_putc(unsigned char chr) {
 
 void terminal_puts(char *string) {
     for (int i = 0; string[i] != 0; i++) {
+        //outb(0xe9, string[i]);
         terminal_putc(string[i]);
     }
 }

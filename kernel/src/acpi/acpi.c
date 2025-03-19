@@ -8,6 +8,7 @@
 #include <utils/panic.h>
 #include <idt/idt.h>
 #include <apic/ioapic.h>
+#include <process/process.h>
 
 rsdp_t *rsdp;
 
@@ -85,11 +86,11 @@ void acpi_init(boot_info_t *boot_info) {
 
     if (rsdp->revision > 0) {
         xsdt = (xsdt_t *)((uint64_t)rsdp->xsdt_addr);
-        paging_map((void *)(xsdt), (void *)(xsdt), NULL);
+        paging_map((void *)(xsdt), (void *)(xsdt), PAGE_NORMAL);
         log_info("ACPI", "Mapped XSDT to memory");
     } else {
         rsdt = (rsdt_t *)((uint64_t)rsdp->rsdt_addr);
-        paging_map((void *)(rsdt), (void *)(rsdt), NULL);
+        paging_map((void *)(rsdt), (void *)(rsdt), PAGE_NORMAL);
         log_info("ACPI", "Mapped RSDT to memory");
     }
 
@@ -105,7 +106,7 @@ void acpi_init(boot_info_t *boot_info) {
         paging_map(
             (void *)((uint64_t)hdr & 0xFFFFFFFFFFFFF000),
             (void *)((uint64_t)hdr & 0xFFFFFFFFFFFFF000), 
-            NULL
+            PAGE_NORMAL
         );
     }
     log_info("ACPI", "Mapped every table to memory");

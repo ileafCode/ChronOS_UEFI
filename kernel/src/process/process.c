@@ -9,19 +9,8 @@
 process_t *proc_queue = NULL;
 process_t *cur_proc = NULL;
 int num_pids = 0;
-int locked = 0;
-
-void process_lock() {
-    locked = 1;
-}
-
-void process_unlock() {
-    locked = 0;
-}
 
 void schedule(regs_t *regs) {
-    if (locked)
-        return;
     if (proc_queue == NULL) {
         //log_info("PROC", "Process queue is NULL.");
         return;
@@ -53,14 +42,10 @@ void schedule(regs_t *regs) {
     cur_proc->regs.r13 = regs->r13;
     cur_proc->regs.r14 = regs->r14;
     cur_proc->regs.r15 = regs->r15;
-    //memcpy(&cur_proc->regs, regs, sizeof(regs_t));
-    asm volatile(" fxsave %0 "::"m"(cur_proc->fxsave_region));
+    cur_proc->regs.cs  = regs->cs;
+    asm volatile("fxsave %0 "::"m"(cur_proc->fxsave_region));
 
-    //printk("Current: %lx Next: %lx\n", regs->rip, cur_proc->next->regs.rip);
-
-    //log_info("PROC", "cur_proc: %lx, next proc: %lx", cur_proc, cur_proc->next);
     cur_proc = cur_proc->next;
-    //memcpy(regs, &cur_proc->regs, sizeof(regs_t));
 
     regs->rax = cur_proc->regs.rax;
     regs->rcx = cur_proc->regs.rcx;
@@ -80,8 +65,15 @@ void schedule(regs_t *regs) {
     regs->r13 = cur_proc->regs.r13;
     regs->r14 = cur_proc->regs.r14;
     regs->r15 = cur_proc->regs.r15;
+    regs->cs  = cur_proc->regs.cs;
     asm volatile("fxrstor %0 "::"m"(cur_proc->fxsave_region));
+    //paging_change_dir(cur_proc->pml4);
+
+    //printk("Current RIP: %lx\n", regs->rip);
 }
+
+extern char _kern_start[];
+extern char _kern_end[];
 
 void make_proc(void *entry, int size_pages) {
     process_t *new_proc = (process_t *)pmm_getpage();//kmalloc(sizeof(process_t));
@@ -90,8 +82,8 @@ void make_proc(void *entry, int size_pages) {
     new_proc->regs.rdx = 0;
     new_proc->regs.rbx = 0;
     new_proc->regs.rbp = 0;
-    new_proc->regs.rsi = 420;
-    new_proc->regs.rdi = 69;
+    new_proc->regs.rsi = 0; // 2nd arg (SYSV ABI)
+    new_proc->regs.rdi = 0; // 1st arg (SYSV ABI)
     new_proc->regs.rflags = 0x202;
     new_proc->regs.rip = (uint64_t)entry;
     new_proc->regs.r8  = 0;
@@ -102,15 +94,16 @@ void make_proc(void *entry, int size_pages) {
     new_proc->regs.r13 = 0;
     new_proc->regs.r14 = 0;
     new_proc->regs.r15 = 0;
+    new_proc->regs.cs  = 0x08;
 
-    //new_proc->regs.cr3 = (uint64_t)paging_get_pml4();
-    new_proc->pml4 = paging_get_pml4();
+    // The stack
+    new_proc->stack = pmm_getpage();
+    new_proc->regs.rsp = (uint64_t)(new_proc->stack) + 0x1000;
 
-    new_proc->regs.rsp = (uint64_t)(pmm_getpage()) + 0x1000;
+    // Paging
+    new_proc->pml4 = create_page_table();
 
-    /*process_t *first_proc_in_queue = proc_queue;
-    new_proc->next = first_proc_in_queue;
-    proc_queue = new_proc;*/
+    new_proc->pid_id = num_pids++;
 
     memset(new_proc->fxsave_region, 0, 512);
 
@@ -119,31 +112,72 @@ void make_proc(void *entry, int size_pages) {
     proc_queue->next = new_proc;
 }
 
-void idle(uint64_t x, uint64_t y) {
-    //printk("X: %d, Y: %d\n", x, y);
-    asm volatile (
-        "movq $0,  %rax\n"
-        "movq $69, %rbx\n"
-        "int $0x80\n"
-    );
-    asm volatile (
-        "movq $0,  %rax\n"
-        "movq $69, %rbx\n"
-        "int $0x80\n"
-    );
-    asm volatile (
-        "movq $0,  %rax\n"
-        "movq $69, %rbx\n"
-        "int $0x80\n"
-    );
+void make_proc_from_elf(void *elf_data) {
+    process_t *new_proc = (process_t *)pmm_getpage();//kmalloc(sizeof(process_t));
+    new_proc->regs.rax = 0;
+    new_proc->regs.rcx = 0;
+    new_proc->regs.rdx = 0;
+    new_proc->regs.rbx = 0;
+    new_proc->regs.rbp = 0;
+    new_proc->regs.rsi = 0; // 2nd arg (SYSV ABI)
+    new_proc->regs.rdi = 0; // 1st arg (SYSV ABI)
+    new_proc->regs.rflags = 0x202;
+    new_proc->regs.r8  = 0;
+    new_proc->regs.r9  = 0;
+    new_proc->regs.r10 = 0;
+    new_proc->regs.r11 = 0;
+    new_proc->regs.r12 = 0;
+    new_proc->regs.r13 = 0;
+    new_proc->regs.r14 = 0;
+    new_proc->regs.r15 = 0;
+    new_proc->regs.cs  = 0x08;
+
+    // The stack
+    new_proc->stack = pmm_getpage();
+    new_proc->regs.rsp = (uint64_t)(new_proc->stack) + 0x1000;
+
+    // Paging
+    new_proc->pml4 = create_page_table();
+    __paging_map(new_proc->pml4, new_proc->stack, new_proc->stack, PAGE_NORMAL);
+
+    new_proc->elf_program = load_elf(elf_data, new_proc->pml4);
+
+    new_proc->regs.rip = (uint64_t)new_proc->elf_program->entry;
+
+    new_proc->pid_id = num_pids++;
+
+    memset(new_proc->fxsave_region, 0, 512);
+
+    process_t *tmp_next = proc_queue->next;
+    new_proc->next = tmp_next;
+    proc_queue->next = new_proc;
+}
+
+void idle() {
+    asm volatile("movq $0, %rax;int $0x80");
     while (1) {
-        //printk("Hi\n");
     }
 }
 
+void process_set_pml4_to_kernel() {
+    //return;
+    if (!proc_queue && !proc_queue->pml4)
+        return;
+    paging_change_dir(proc_queue->pml4);
+}
+
+void process_set_pml4_to_cur_proc() {
+    //return;
+    if (!cur_proc)
+        return;
+    paging_change_dir(cur_proc->pml4);
+}
+
 void process_init() {
-    proc_queue = (process_t *)pmm_getpage();//kmalloc(sizeof(process_t));
+    proc_queue = (process_t *)pmm_getpage();
     cur_proc = proc_queue;
+    cur_proc->pid_id = num_pids++;
+    cur_proc->pml4 = paging_get_pml4();
     cur_proc->next = cur_proc;
 
     make_proc((void *)idle, 0);
