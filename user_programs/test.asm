@@ -3,21 +3,12 @@
 ; Basic test program for ChronOS64
 
 _start:
-    mov rax, 0  ; Test syscall (adds 10 to rbx and prints it out)
-    mov rbx, 59 ; Random data
-    int 0x80    ; Syscall
+    mov rax, 1                   ; mmap syscall
+    mov rdi, 0xC0000000          ; fb
+    mov rsi, 2                   ; page flags (present, rw)
+    mov rdx, 1                   ; page count
+    int 0x80                     ; address in rax
 
-    mov rax, 0  ; Test syscall (adds 10 to rbx and prints it out)
-    mov rbx, 25 ; Random data
-    int 0x80    ; Syscall
-
-    mov rax, 0   ; Test syscall (adds 10 to rbx and prints it out)
-    mov rbx, 832 ; Random data
-    int 0x80     ; Syscall
-
-    mov rax, 0    ; Test syscall (adds 10 to rbx and prints it out)
-    mov rbx, 5449 ; Random data
-    int 0x80      ; Syscall
-
-    jmp $       ; Currently just a forever loop because I don't have an exit syscall yet
+    mov dword [rax], 0xFF00FF00
+    jmp $               ; Currently just a forever loop because I don't have an exit syscall yet
 [GLOBAL _start]

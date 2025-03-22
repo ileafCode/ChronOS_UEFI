@@ -104,8 +104,10 @@ void make_proc(void *entry, int size_pages) {
     new_proc->pml4 = create_page_table();
 
     new_proc->pid_id = num_pids++;
-
     memset(new_proc->fxsave_region, 0, 512);
+
+    new_proc->bitmap->bitmap = pmm_getpage();
+    memset(new_proc->bitmap->bitmap, 0, 0x1000);
 
     process_t *tmp_next = proc_queue->next;
     new_proc->next = tmp_next;
@@ -141,12 +143,12 @@ void make_proc_from_elf(void *elf_data) {
     __paging_map(new_proc->pml4, new_proc->stack, new_proc->stack, PAGE_NORMAL);
 
     new_proc->elf_program = load_elf(elf_data, new_proc->pml4);
-
     new_proc->regs.rip = (uint64_t)new_proc->elf_program->entry;
-
     new_proc->pid_id = num_pids++;
-
     memset(new_proc->fxsave_region, 0, 512);
+
+    new_proc->bitmap->bitmap = pmm_getpage();
+    memset(new_proc->bitmap->bitmap, 0, 0x1000);
 
     process_t *tmp_next = proc_queue->next;
     new_proc->next = tmp_next;
@@ -171,6 +173,10 @@ void process_set_pml4_to_cur_proc() {
     if (!cur_proc)
         return;
     paging_change_dir(cur_proc->pml4);
+}
+
+process_t *get_cur_proc() {
+    return cur_proc;
 }
 
 void process_init() {

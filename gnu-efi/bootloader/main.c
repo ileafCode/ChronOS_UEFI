@@ -79,7 +79,7 @@ Framebuffer* InitializeGOP(){
 	EFI_STATUS status;
 
 	status = uefi_call_wrapper(BS->LocateProtocol, 3, &gopGuid, NULL, (void**)&gop);
-	if(EFI_ERROR(status)){
+	if (EFI_ERROR(status)){
 		Print(L"Unable to locate GOP\n\r");
 		return NULL;
 	}

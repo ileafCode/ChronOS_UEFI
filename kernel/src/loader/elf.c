@@ -42,8 +42,6 @@ elf_prg_t *load_elf(void *data, page_table_t *page_table) {
         Elf64_Shdr *shdr = &shdr_base[i];
 
         if (shdr->sh_addr != 0) {
-            //printk("%lx %lx (%lx)\n", shdr->sh_addr, prog->program + (shdr->sh_addr - ELF_VIRT_ENTRY), prog->program);
-            //printk("%d\n", shdr->sh_size);
             __paging_map(page_table, (void *)shdr->sh_addr,
                 (void *)(prog->program + (shdr->sh_addr - ELF_VIRT_ENTRY)),
                 PAGE_NORMAL);

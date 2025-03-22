@@ -64,8 +64,6 @@ EXTERN lapic_address
     call process_set_pml4_to_kernel
     mov rdi, rsp
     call %1
-    
-    call process_set_pml4_to_kernel
 
     push rax
     mov rax, [lapic_address]

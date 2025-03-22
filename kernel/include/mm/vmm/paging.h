@@ -19,7 +19,7 @@
 
 typedef struct page_table { 
     uint64_t entries[512];
-} page_table_t __attribute__((aligned(0x1000)));
+} page_table_t;
 
 typedef struct page_map_idx {
     uint64_t PDP_i;

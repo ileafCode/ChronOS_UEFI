@@ -4,6 +4,7 @@
 #include <idt/idt.h>
 #include <mm/pmm/pmm.h>
 #include <mm/vmm/paging.h>
+#include <mm/vmm/vmm.h>
 #include <efimem.h>
 #include <printk/printk.h>
 #include <bootinfo.h>
@@ -23,6 +24,8 @@
 #include <process/process.h>
 #include <io/io.h>
 #include <loader/elf.h>
+#include <drivers/fb/fb.h>
+#include <drivers/device.h>
 
 extern void enable_sce();
 extern void enable_optimizations();
@@ -71,6 +74,8 @@ void _start(boot_info_t *boot_info) {
     gdt_init();
     idt_init();
 
+    fb_init(boot_info->framebuffer);
+
     if (boot_info->rsdp == 0) { // Fatal error
         kernel_panic("No RSDP/XSDP found.");
         printk("This OS does not support computers without ACPI.\n");
@@ -116,6 +121,8 @@ void _start(boot_info_t *boot_info) {
     printk("\n");
 
     ioapic_set_entry(ioapic_remap_irq(1), 0x21);
+
+    printk("%lx\n", boot_info->framebuffer->address);
 
     FIL file;
     int file_sz, br;
