@@ -4,6 +4,7 @@
 #include <shmall_wrapper.h>
 #include <string/string.h>
 #include <mm/pmm/pmm.h>
+#include <mm/vmm/vmm.h>
 #include <io/io.h>
 
 process_t *proc_queue = NULL;
@@ -23,7 +24,7 @@ void schedule(regs_t *regs) {
         log_info("PROC", "Next process is NULL.");
         return;
     }
-
+    
     cur_proc->regs.rax = regs->rax;
     cur_proc->regs.rcx = regs->rcx;
     cur_proc->regs.rdx = regs->rdx;
@@ -67,47 +68,38 @@ void schedule(regs_t *regs) {
     regs->r15 = cur_proc->regs.r15;
     regs->cs  = cur_proc->regs.cs;
     asm volatile("fxrstor %0 "::"m"(cur_proc->fxsave_region));
-    //paging_change_dir(cur_proc->pml4);
-
-    //printk("Current RIP: %lx\n", regs->rip);
 }
 
 extern char _kern_start[];
 extern char _kern_end[];
 
 void make_proc(void *entry, int size_pages) {
-    process_t *new_proc = (process_t *)pmm_getpage();//kmalloc(sizeof(process_t));
-    new_proc->regs.rax = 0;
-    new_proc->regs.rcx = 0;
-    new_proc->regs.rdx = 0;
-    new_proc->regs.rbx = 0;
-    new_proc->regs.rbp = 0;
-    new_proc->regs.rsi = 0; // 2nd arg (SYSV ABI)
-    new_proc->regs.rdi = 0; // 1st arg (SYSV ABI)
+    process_t *new_proc = (process_t *)pmm_getpage();
+    memset(&new_proc->regs, 0, sizeof(regs_t));
     new_proc->regs.rflags = 0x202;
     new_proc->regs.rip = (uint64_t)entry;
-    new_proc->regs.r8  = 0;
-    new_proc->regs.r9  = 0;
-    new_proc->regs.r10 = 0;
-    new_proc->regs.r11 = 0;
-    new_proc->regs.r12 = 0;
-    new_proc->regs.r13 = 0;
-    new_proc->regs.r14 = 0;
-    new_proc->regs.r15 = 0;
     new_proc->regs.cs  = 0x08;
 
     // The stack
     new_proc->stack = pmm_getpage();
     new_proc->regs.rsp = (uint64_t)(new_proc->stack) + 0x1000;
+    new_proc->regs.rbp = new_proc->regs.rsp;
 
     // Paging
     new_proc->pml4 = create_page_table();
 
+    // Other stuff
     new_proc->pid_id = num_pids++;
-    memset(new_proc->fxsave_region, 0, 512);
 
     new_proc->bitmap->bitmap = pmm_getpage();
     memset(new_proc->bitmap->bitmap, 0, 0x1000);
+    new_proc->bitmap->size = VMM_SIZE_PAGES / 8;
+
+    memset(new_proc->fxsave_region, 0, 512);
+
+    for (int i = 0; i < MAX_FILES_OPENABLE; i++) {
+        new_proc->files[i] = NULL;
+    }
 
     process_t *tmp_next = proc_queue->next;
     new_proc->next = tmp_next;
@@ -115,28 +107,15 @@ void make_proc(void *entry, int size_pages) {
 }
 
 void make_proc_from_elf(void *elf_data) {
-    process_t *new_proc = (process_t *)pmm_getpage();//kmalloc(sizeof(process_t));
-    new_proc->regs.rax = 0;
-    new_proc->regs.rcx = 0;
-    new_proc->regs.rdx = 0;
-    new_proc->regs.rbx = 0;
-    new_proc->regs.rbp = 0;
-    new_proc->regs.rsi = 0; // 2nd arg (SYSV ABI)
-    new_proc->regs.rdi = 0; // 1st arg (SYSV ABI)
+    process_t *new_proc = (process_t *)pmm_getpage();
+    memset(&new_proc->regs, 0, sizeof(regs_t));
     new_proc->regs.rflags = 0x202;
-    new_proc->regs.r8  = 0;
-    new_proc->regs.r9  = 0;
-    new_proc->regs.r10 = 0;
-    new_proc->regs.r11 = 0;
-    new_proc->regs.r12 = 0;
-    new_proc->regs.r13 = 0;
-    new_proc->regs.r14 = 0;
-    new_proc->regs.r15 = 0;
     new_proc->regs.cs  = 0x08;
 
     // The stack
     new_proc->stack = pmm_getpage();
     new_proc->regs.rsp = (uint64_t)(new_proc->stack) + 0x1000;
+    new_proc->regs.rbp = new_proc->regs.rsp;
 
     // Paging
     new_proc->pml4 = create_page_table();
@@ -145,10 +124,17 @@ void make_proc_from_elf(void *elf_data) {
     new_proc->elf_program = load_elf(elf_data, new_proc->pml4);
     new_proc->regs.rip = (uint64_t)new_proc->elf_program->entry;
     new_proc->pid_id = num_pids++;
+
     memset(new_proc->fxsave_region, 0, 512);
 
     new_proc->bitmap->bitmap = pmm_getpage();
     memset(new_proc->bitmap->bitmap, 0, 0x1000);
+
+    new_proc->bitmap->size = VMM_SIZE_PAGES / 8;
+
+    for (int i = 0; i < MAX_FILES_OPENABLE; i++) {
+        new_proc->files[i] = NULL;
+    }
 
     process_t *tmp_next = proc_queue->next;
     new_proc->next = tmp_next;
@@ -156,20 +142,16 @@ void make_proc_from_elf(void *elf_data) {
 }
 
 void idle() {
-    asm volatile("movq $0, %rax;int $0x80");
-    while (1) {
-    }
+    while (1) {}
 }
 
 void process_set_pml4_to_kernel() {
-    //return;
     if (!proc_queue && !proc_queue->pml4)
         return;
     paging_change_dir(proc_queue->pml4);
 }
 
 void process_set_pml4_to_cur_proc() {
-    //return;
     if (!cur_proc)
         return;
     paging_change_dir(cur_proc->pml4);

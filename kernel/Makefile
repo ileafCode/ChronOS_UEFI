@@ -8,7 +8,7 @@ CC = x86_64-elf-gcc
 ASMC = nasm
 LD = x86_64-elf-ld
 
-CFLAGS = -ffreestanding -I include -O1 -msse -msse2 -mno-mmx -mno-red-zone
+CFLAGS = -ffreestanding -I include -O0 -mno-sse -mno-sse2 -mno-mmx -mno-red-zone
 LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib -z max-page-size=0x1000
 
 SRCDIR := src
@@ -56,6 +56,7 @@ buildimg:
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/font.psf ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/functions.txt ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img ../user_programs/bin/test ::
+	mcopy -i $(BUILDDIR)/$(OSNAME).img ../user_programs/bin/init ::
 
 run:
 	sudo qemu-system-x86_64 -drive file=$(BUILDDIR)/$(OSNAME).img \
@@ -67,5 +68,4 @@ run:
 	-m 512M -cpu qemu64 -machine q35 \
 	-drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/ovmf_code.fd",readonly=on \
 	-drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/ovmf_vars.fd",readonly=on \
-	-debugcon stdio \
-	-d cpu_reset
+	-debugcon stdio

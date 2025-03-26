@@ -31,7 +31,7 @@ void *mmap(process_t *proc, void *phys, uint64_t flags, int pages) {
     }
 
     void *virtaddr = (void *)((uint64_t)(VMM_ADDR_START) + (0x1000 * idx));
-    //log_info("VMM", "mmap - virtaddr = %lx, physaddr = %lx, flags = %d", virtaddr, phys_addr, flags);
+    log_info("VMM", "mmap - virtaddr = %lx, physaddr = %lx, flags = %d, idx = %d", virtaddr, phys_addr, flags, idx);
 
     for (int i = 0; i < pages; i++) {
         bitmap_set(proc->bitmap, idx + i, 1);
@@ -39,4 +39,20 @@ void *mmap(process_t *proc, void *phys, uint64_t flags, int pages) {
     }
 
     return virtaddr;
+}
+
+int munmap(process_t *proc, void *addr, int pages) {
+    // Sanity checks
+    if (!addr || !pages || !proc) {
+        return -1;
+    }
+
+    int idx = ((uint64_t)(addr) - (uint64_t)(VMM_ADDR_START)) / 0x1000;
+    for (int i = 0; i < pages; i++) {
+        bitmap_set(proc->bitmap, idx + i, 0);
+        __paging_unmap(proc->pml4, addr + (0x1000 * i));
+    }
+    log_info("VMM", "munmap - virtaddr = %lx, idx = %d", addr, idx);
+
+    return 0;
 }

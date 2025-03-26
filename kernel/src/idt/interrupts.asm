@@ -42,7 +42,6 @@ EXTERN process_set_pml4_to_kernel
 EXTERN process_set_pml4_to_cur_proc
 
 %macro int_stub 2
-    cli
     pushaq
     call process_set_pml4_to_kernel
 
@@ -52,14 +51,12 @@ EXTERN process_set_pml4_to_cur_proc
 
     call process_set_pml4_to_cur_proc
     popaq
-    sti
     iretq
 %endmacro
 
 EXTERN lapic_address
 
 %macro irq_stub 1
-    cli
     pushaq
     call process_set_pml4_to_kernel
     mov rdi, rsp
@@ -73,13 +70,11 @@ EXTERN lapic_address
 
     call process_set_pml4_to_cur_proc
     popaq
-    sti
 %endmacro
 
 ; Syscall
 EXTERN syscall_handler
 syscall_req:
-    cli
     pushaq
     call process_set_pml4_to_kernel
 
@@ -88,7 +83,6 @@ syscall_req:
 
     call process_set_pml4_to_cur_proc
     popaq
-    sti
     iretq
 GLOBAL syscall_req
 

@@ -122,12 +122,10 @@ void _start(boot_info_t *boot_info) {
 
     ioapic_set_entry(ioapic_remap_irq(1), 0x21);
 
-    printk("%lx\n", boot_info->framebuffer->address);
-
     FIL file;
     int file_sz, br;
     char *buffer;
-    res = f_open(&file, "/test", FA_READ | FA_WRITE);
+    res = f_open(&file, "/init", FA_READ | FA_WRITE);
     if (res) {
         printk("Failed to open /test (%d)\n", res);
         while (1);

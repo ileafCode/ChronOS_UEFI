@@ -3,10 +3,9 @@ ENTRY(_start)
 
 SECTIONS
 {
-	. = 0x10000;
+	. = 0x100000;
 	_kern_start = .;
-
-  	__kernel_code_start = .;
+	
   	.text : AT(ADDR(.text)) {
   	  *(.text)
   	}

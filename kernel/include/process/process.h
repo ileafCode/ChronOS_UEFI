@@ -6,6 +6,9 @@
 #include <utils/regs.h>
 #include <loader/elf.h>
 #include <ds/bitmap.h>
+#include <fs/fat/ff.h>
+
+#define MAX_FILES_OPENABLE 64
 
 typedef struct process {
     regs_t regs;
@@ -16,6 +19,8 @@ typedef struct process {
     elf_prg_t *elf_program;
     // vmm stuff
     bitmap_t *bitmap;
+    // file stuff
+    FIL *files[MAX_FILES_OPENABLE];
     struct process *next;
 } process_t;
 

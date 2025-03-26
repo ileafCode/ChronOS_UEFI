@@ -3,6 +3,7 @@
 #include <logging/logging.h>
 #include <string/string.h>
 
+extern void __write_cr3(uint64_t);
 
 void pde_setaddress(uint64_t *pde, uint64_t address) {
     address &= 0x000000ffffffffff;
@@ -33,7 +34,8 @@ page_table_t *paging_get_pml4() {
 
 void paging_change_dir(page_table_t *dir) {
     pml4 = dir;
-    asm volatile ("mov %0, %%cr3" : : "r" ((uint64_t)dir));
+    __write_cr3((uint64_t)dir);
+    //asm volatile ("mov %0, %%cr3" : : "r" ((uint64_t)dir));
 }
 
 // Paging code (internal)
@@ -181,10 +183,8 @@ void paging_init(boot_info_t *boot_info) {
     uint64_t fbBase = (uint64_t)boot_info->framebuffer->address;
     uint64_t fbSize = (uint64_t)boot_info->framebuffer->buf_size + 0x1000;
     for (uint64_t t = fbBase; t < fbBase + fbSize; t += 0x1000) {
-        __paging_map(pml4, (void *)t, (void *)t, PAGE_NORMAL);
+        __paging_map(pml4, (void *)t, (void *)t, PAGE_NORMAL | PAGE_CACHE_DISABLED | PAGE_WRITE_THROUGH);
     }
-    
-    log_info("PAGE", "Mapped framebuffer");
     
     asm volatile ("mov %0, %%cr3" : : "r"(pml4));
     log_ok("PAGE", "Paging initialized (CR3: 0x%x)", pml4);
